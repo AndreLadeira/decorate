@@ -1,0 +1,4 @@
+#ifndef STDDECORATORS_H
+#define STDDECORATORS_H
+
+#endif // STDDECORATORS_H
