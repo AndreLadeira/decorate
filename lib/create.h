@@ -13,7 +13,7 @@ public:
     Creator() = default;
     virtual ~Creator() = default;
 
-    virtual solution_t create(void) = 0;
+    virtual solution_t operator()(void) = 0;
 };
 
 }

@@ -3,10 +3,12 @@
 #include <algorithm>
 #include <map>
 #include <random>
+#include <sstream>
 #include "../lib/random.h"
 
 using namespace std;
 using namespace onion::cops::tsp;
+using namespace onion::cops::tsp::path;
 
 namespace  {
 
@@ -128,7 +130,7 @@ catch(istream::failure& ){
     throw runtime_error("tsp_tsplibDataLoader: corrupt data file");
 }
 
-path_t path::CreateRandom::create()
+path_t path::CreateRandom::operator()()
 {
     path_t path(_size+1);
     // create a random path
@@ -143,7 +145,7 @@ path_t path::CreateRandom::create()
     return path_t(path);
 }
 
-std::ostream& onion::cops::tsp::operator<<(std::ostream &os, const path_t &path)
+std::ostream& path::operator<<(std::ostream &os, const path_t &path)
 {
     for(auto city : path){
         os<< city << " ";
@@ -197,7 +199,8 @@ path_t _2optSwap(const path_t& path, unsigned start, unsigned length)
 #ifdef __DEBUG__
     auto sz = path.size();
     if ( start < 1 || start > sz - 3  ) throw runtime_error("_2optSwap: start out of bounds.");
-    if ( length < 2 || length > sz - 2  ) throw runtime_error("_2optSwap: length out of bounds.");
+    if ( length < 2 || length > sz - 2  ) throw runtime_error(
+                (stringstream() << "_2optSwap: length out of bounds: " << sz << "/" << length << " (size/length)").str()   );
     if ( start + length > sz  ) throw runtime_error("_2optSwap: start+length out of bounds.");
 #endif
     path_t newpath(path);
@@ -212,7 +215,7 @@ _2optSingle::_2optSingle(unsigned length):_length(length){}
 std::vector<path_t> _2optSingle::get(const path_t &path) const
 {
 
-    const unsigned sz         = static_cast<unsigned>(path.size());
+    const unsigned sz   = static_cast<unsigned>(path.size());
     auto length         = _length;
     if (!length) length = onion::rand_between(2,sz-2);
     auto start          = onion::rand_between(1,sz-length-1);
@@ -225,25 +228,88 @@ _2optAll::_2optAll(unsigned length):_length(length){}
 
 std::vector<path_t> _2optAll::get(const path_t &path) const
 {
-    const auto sz = path.size();
-    std::vector<path_t> res(sz-4);
+    const unsigned sz   = static_cast<unsigned>(path.size());
+    auto length         = _length;
+    if (!length) length = onion::rand_between(2,sz-2);
 
-    for(unsigned start = 1; start < sz-3; ++start)
-        res.push_back(_2optSwap(path,start,_length));
+    std::vector<path_t> res;
+    res.reserve(sz-length-1);
+
+    for(unsigned start = 1; start < sz-length; ++start)
+        res.push_back(_2optSwap(path,start,length));
 
     return std::vector<path_t>( res );
 }
 
-path::Objective::cost_t path::Objective::get(const path_t &p) const
+path::Objective::cost_t path::Objective::get(const path_t &p)
 {
-    const auto sz = p.size();
-    cost_t cost(0);
-
+    const auto & sz = p.size();
+    cost_t cost = 0;
     for(unsigned i = 0; i < sz-1; ++i)
         cost += _data.at(p[i]).at(p[i+1]);
+    return cost;
+}
 
-    return cost_t(cost);
+std::vector<path::Objective::cost_t>
+path::Objective::get(const std::vector<path_t>& candidates)
+{
+    std::vector<cost_t> costs;
+    costs.reserve(candidates.size());
+
+    for( const auto& c : candidates)
+        costs.push_back( this->get(c));
+
+    return std::vector<path::Objective::cost_t>(costs);
 }
 
 path::Objective::Objective(const tsp_problem_data_t &d):
     onion::Objective<path_t,tsp_problem_data_t>(d){}
+
+
+std::vector<path_t> MaskReinsert::get(const path_t &path) const
+{
+    const unsigned sz   = static_cast<unsigned>(path.size());
+    auto length         = _length;
+    if (!length) length = onion::rand_between(1,sz-3);
+    auto start          = onion::rand_between(1,sz-length-1);
+
+    path_t mask( path.cbegin()+start, path.cbegin()+start+length );
+    path_t rest( sz - length );
+
+    copy(path.cbegin(),path.cbegin()+start,rest.begin());
+    copy(path.cbegin()+start+length, path.cend(), rest.begin()+start);
+
+    path_t neighbor(sz);
+    vector<path_t> results;
+    results.reserve(sz-length-2);
+    // ABCDEFGA
+    // 01234567 sz 8
+    // l=3 s = 3
+    // mask = DEF
+    //        01234
+    // rest = ABCGA ABC + GA
+    for(unsigned pos = 1; pos < rest.size(); ++pos)
+    {
+        if ( pos == start ) continue;
+        // ADEFBCGA
+        copy(rest.cbegin(),rest.cbegin()+pos,   neighbor.begin());
+        copy(mask.cbegin(),mask.cend(),         neighbor.begin()+pos);
+        copy(rest.cbegin()+pos,rest.cend(),     neighbor.begin()+pos+length);
+
+        results.push_back(neighbor);
+    }
+
+    return vector<path_t>(results);
+}
+
+std::vector<bitmatrix::Objective::cost_t>
+bitmatrix::Objective::get(const std::vector<bitmatrix_t> &)
+{
+
+}
+
+bitmatrix::Objective::cost_t
+bitmatrix::Objective::get(const bitmatrix_t &)
+{
+
+}

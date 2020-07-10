@@ -27,11 +27,19 @@ public:
         auto p = std::shared_ptr<U>( new U(_ptr) );
         _ptr = p;
     }
+    template <typename U, typename V> void decorate_with(const V& v){
+        auto p = std::shared_ptr<U>( new U(_ptr,v) );
+        _ptr = p;
+    }
 
 //    T& core() const {return *_core;}
 //    const T& const_core() const {return *_core;}
     ptr_t operator->() const { return _ptr;}
-    T& operator()() const { return *_core;}
+    //T& operator()() const { return *_core;}
+
+    auto operator()(void) -> decltype(T::operator()) { return (*_core)(); }
+    template<typename U>
+    auto operator()(U& u) -> decltype(T::operator()){ return (*_core)(u); }
 
     ptr_t dynamicObject() const { return _ptr;}
     T& staticObject() const { return *_core;}

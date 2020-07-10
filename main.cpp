@@ -12,7 +12,7 @@
 using namespace std;
 using namespace onion;
 using namespace onion::cops;
-using tsp::operator<<;
+using tsp::path::operator<<;
 
 int main(int argc, char* argv[])
 try
@@ -37,59 +37,69 @@ try
     Decorator<LoopController> innerloop;
     innerloop.decorate_with< LoopCallsCounter >();
 
-    Decorator< Creator<tsp::path_t> > creator( new tsp::path::CreateRandom(data.size()) );
-    creator.decorate_with< CreatorCallsCounter<tsp::path_t> >();
+    Decorator< tsp::path::Creator > creator( new tsp::path::CreateRandom(data.size()) );
+    creator.decorate_with< tsp::path::CreatorCallsCounter >();
 
-    Decorator< Neighbor<tsp::path_t> > neighborhood( new tsp::_2optSingle() );
+    Decorator< tsp::path::Neighbor > neighborhood( new tsp::path::MaskReinsert() );
+    //Decorator< tsp::path::Neighbor > neighborhood( new tsp::path::_2optSingle() );
+    //Decorator< tsp::path::Neighbor > neighborhood( new tsp::path::_2optAll() );
 
-    Decorator< Objective<tsp::path_t, tsp::tsp_problem_data_t> >
+    Decorator< tsp::path::ObjectiveBase >
             objective( new tsp::path::Objective(data) );
+    objective.decorate_with< tsp::path::ObjectiveCallsCounter >(false);
 
-    Decorator< tsp::Accept1st > accept;
+    Decorator< tsp::AcceptBest > accept;
     Decorator< tsp::path::Updater > updateInner, updateOuter;
 
-    updateOuter.decorate_with< UpdateDownStagCounter<tsp::path_t> >();
+    updateOuter.decorate_with< min::UpdateStagnationCounter<tsp::path_t> >();
     Timer timer;
-    outerloop().addTrigger( Trigger<double>("Timer",timer,0.5));
-    outerloop().addTrigger( Trigger<>("Exploration loops",
-                                      outerloop.as<Counter>(),
-                                      plist.getValue("outer_loops").as<unsigned>()));
+    //outerloop.staticObject().addTrigger( Trigger<double>("Timer",timer,2.0));
+//    outerloop().addTrigger( Trigger<>("Exploration loops",
+//                                      outerloop.as<Counter>(),
+//                                      plist.getValue("outer_loops").as<unsigned>()));
 //    outerloop().addTrigger( Trigger<>("Create calls",creator.as<Counter>(),
 //                                                     100));
-    innerloop().addTrigger( Trigger<>("Intensification loops",
+
+    outerloop.staticObject().addTrigger( Trigger<>("Objective fcn calls",objective.as<Counter>(),1e6));
+    //innerloop.staticObject().addTrigger( Trigger<double>("Timer",timer,2.0));
+    innerloop.staticObject().addTrigger( Trigger<>("Intensification loops",
                                       innerloop.as<Counter>(),
                                       plist.getValue("inner_loops").as<unsigned>()));
-    innerloop().addTrigger( Trigger<double>("Inner loop timer",Timer(),0.01));
+    innerloop.staticObject().addTrigger( Trigger<>("Objective fcn calls",objective.as<Counter>(),1e6));
+//    innerloop().addTrigger( Trigger<double>("Inner loop timer",Timer(),0.01));
 
-    outerloop().addTrigger( Trigger<>("Stagnation Counter",
-                                      updateOuter.as<Counter>(),
-                                      10));
+//    outerloop().addTrigger( Trigger<>("Stagnation Counter",
+//                                      updateOuter.as<Counter>(),
+//                                      20));
     tsp::path_t best;
     unsigned best_cost = numeric_limits<unsigned>::max();
 
-    outerloop().resetTriggers();
+    outerloop.staticObject().resetTriggers();
 
     while( outerloop->running() )
     {
-        auto current = creator->create();
+        auto current = creator();
         auto current_cost = objective->get( current );
 
-        innerloop().resetTriggers();
+        innerloop.staticObject().resetTriggers();
 
         while( innerloop->running() )
         {
             auto neighbor = neighborhood->get(current);
-            auto newcost = objective->get( neighbor[0] );
-            auto accepted = accept->get( current_cost, std::vector<decltype(best_cost)>(1,newcost) );
+            auto newcost = objective->get( neighbor );
+            auto accepted = accept->get( current_cost, newcost );
             if ( accepted )
-                updateInner->update(current, current_cost, neighbor.at(accepted.get()), newcost);
+                updateInner->update(current, current_cost,
+                                    neighbor.at(accepted.get()),
+                                    newcost.at(accepted.get()));
         }
         updateOuter->update(best,best_cost,current,current_cost);
     }
 
     cout<< "Execution stop triggered by         : " << outerloop.staticObject().getTrigger() << endl;
     cout<< "Execution time                      : " << fixed << setprecision(4) << timer.getValue() << "s\n";
-    cout<< "Times create called                 : " << fixed << creator.as<Counter>().getValue() << endl;
+    cout<< "Times create called                 : " << creator.as<Counter>().getValue() << endl;
+    cout<< "Times objective called              : " << objective.as<Counter>().getValue() << endl;
     cout<< "Outer loops count                   : " << outerloop.as<Counter>().getValue() << endl;
     cout<< "Final result                        : " << best_cost << endl;
     cout<< "Final path                          : " << best;

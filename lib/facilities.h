@@ -42,10 +42,13 @@ protected:
 
 struct Counter : public Value<unsigned>
 {
-    Counter() = default;
+    Counter( bool resetable = true ):_resetable(resetable){}
 
 protected:
     void count(unsigned amount = 1)  { this->_v += amount;}
+    virtual void reset();
+private:
+    bool _resetable;
 
 };
 

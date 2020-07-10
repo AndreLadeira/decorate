@@ -10,7 +10,7 @@ template <class T> class matrix_of :
         public std::vector<array_of<T>>
 {
 public:
-    matrix_of(size_t i, size_t j):std::vector<array_of<T>>(i,array_of<T>(j)),
+    matrix_of(size_t i = 0, size_t j = 0):std::vector<array_of<T>>(i,array_of<T>(j)),
         _rows(i),_cols(j){}
     void clear(){
         for(unsigned i = 0; i < _rows; ++i)
