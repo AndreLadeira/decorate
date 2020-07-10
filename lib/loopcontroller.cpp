@@ -5,7 +5,7 @@ using namespace std;
 
 __Trigger::__Trigger(const std::string &label):LabeledObject(label){}
 
-bool LoopController::running () {
+bool LoopController::running() {
 
     for( auto trigger : _triggers )
         if (trigger->activated()) {

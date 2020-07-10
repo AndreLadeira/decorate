@@ -37,9 +37,9 @@ public:
     ptr_t operator->() const { return _ptr;}
     //T& operator()() const { return *_core;}
 
-    auto operator()(void) -> decltype(T::operator()) { return (*_core)(); }
-    template<typename U>
-    auto operator()(U& u) -> decltype(T::operator()){ return (*_core)(u); }
+//    auto operator()(void) -> decltype(T::operator()) { return (*_core)(); }
+//    template<typename U>
+//    auto operator()(U& u) -> decltype(T::operator()){ return (*_core)(u); }
 
     ptr_t dynamicObject() const { return _ptr;}
     T& staticObject() const { return *_core;}

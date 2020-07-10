@@ -34,7 +34,7 @@ class CreateRandom : public onion::Creator< path_t >
 {
 public:
     CreateRandom(size_t sz):_size(sz){}
-    virtual path_t operator()(void);
+    virtual path_t create(void);
 private:
     size_t _size;
 };

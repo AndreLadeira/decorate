@@ -78,7 +78,7 @@ try
 
     while( outerloop->running() )
     {
-        auto current = creator();
+        auto current = creator->create();
         auto current_cost = objective->get( current );
 
         innerloop.staticObject().resetTriggers();

@@ -130,7 +130,7 @@ catch(istream::failure& ){
     throw runtime_error("tsp_tsplibDataLoader: corrupt data file");
 }
 
-path_t path::CreateRandom::operator()()
+path_t path::CreateRandom::create()
 {
     path_t path(_size+1);
     // create a random path

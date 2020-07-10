@@ -4,7 +4,7 @@
 using namespace std;
 using namespace onion::mh;
 
-void RRGAParametersChecker::load(istream &is, ParameterList &paramList) const{
+void RRGAParametersChecker::operator()(istream &is, ParameterList &paramList) const{
     DecoratorBase::_ptr->load(is,paramList);
     const vector<string> rrgaParams = { "inner_loops", "outer_loops" };
     for(auto p:rrgaParams){

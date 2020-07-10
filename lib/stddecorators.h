@@ -34,7 +34,7 @@ class CreatorCallsCounter:
 
     CreatorCallsCounter(typename DecoratorBase::ptr_t ptr):
         DecoratorBase(ptr){}
-    virtual solution_t operator()(){
+    virtual solution_t create(){
         this->count();
         return DecoratorBase::_ptr->create();
     }

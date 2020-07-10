@@ -17,7 +17,7 @@ class RRGAParametersChecker:
     RRGAParametersChecker( typename DecoratorBase::ptr_t ptr):
         onion::Decorator<ParameterLoader>(ptr){}
 
-    virtual void load(std::istream& is, ParameterList& paramList) const;
+    virtual void operator()(std::istream& is, ParameterList& paramList) const;
 
 public:
 
