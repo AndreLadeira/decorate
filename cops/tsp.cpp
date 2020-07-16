@@ -302,14 +302,14 @@ std::vector<path_t> MaskReinsert::get(const path_t &path) const
     return vector<path_t>(results);
 }
 
-std::vector<bitmatrix::Objective::cost_t>
-bitmatrix::Objective::get(const std::vector<bitmatrix_t> &)
-{
+//std::vector<bitmatrix::Objective::cost_t>
+//bitmatrix::Objective::get(const std::vector<bitmatrix_t> &)
+//{
 
-}
+//}
 
-bitmatrix::Objective::cost_t
-bitmatrix::Objective::get(const bitmatrix_t &)
-{
+//bitmatrix::Objective::cost_t
+//bitmatrix::Objective::get(const bitmatrix_t &)
+//{
 
-}
+//}
