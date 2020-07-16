@@ -29,27 +29,33 @@ private:
 template<typename T>
 struct Value
 {
-    Value():_v(T(0)){}
+    explicit Value( bool resetable = true):_v(T(0)),_resetable(resetable){}
     Value(T v):_v(v){}
     virtual ~Value() = default;
-    virtual T getValue(void) const {return _v;}
-    virtual void reset() { this->_v = T(0); }
+    virtual T getValue(void) const{
+        return _v;
+    }
+    virtual void reset(){
+        if (_resetable) hardReset();
+    }
+    virtual void hardReset(){
+        _v = T(0);
+    }
 
 protected:
-
     T _v;
+private:
+    bool _resetable;
 };
 
 struct Counter : public Value<unsigned>
 {
-    Counter( bool resetable = true ):_resetable(resetable){}
+    explicit Counter( bool resetable = true):Value<unsigned>(resetable){}
+    Counter(unsigned v):Value<unsigned>(v){}
 
 protected:
-    void count(unsigned amount = 1)  { this->_v += amount;}
-    virtual void reset();
-private:
-    bool _resetable;
 
+    virtual void count(unsigned amount = 1);
 };
 
 template<typename T>
@@ -74,10 +80,11 @@ private:
 
 struct Timer : public Value<double>
 {
-    Timer(bool started = false);
+    Timer(bool startnow = false, bool resetable = true);
     void start();
-    virtual void reset();
-    virtual double getValue(void) const;
+    double getValue(void) const;
+    void reset();
+    void hardReset();
 private:
     clock_t begin;
 };

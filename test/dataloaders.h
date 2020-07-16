@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <fstream>
-#include "../lib/onion.h"
+#include "../lib/onionmh.h"
 using namespace std;
 
 void testDataLoaders(void)

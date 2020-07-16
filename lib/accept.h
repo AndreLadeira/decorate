@@ -15,11 +15,11 @@ public:
     AcceptResult() = default;
 
     operator bool() const { return _accepted; }
-    unsigned get() const{
+    unsigned index() const{
         if (_accepted) return _index;
         throw std::runtime_error("AcceptResult: no results.");
     }
-    operator unsigned() const { return get(); }
+    operator unsigned() const { return index(); }
 
 private:
 
@@ -37,7 +37,7 @@ protected:
     Accept() = default;
     virtual ~Accept() = default;
 
-    virtual  AcceptResult get(const cost_t&,
+    virtual  AcceptResult operator()(const cost_t&,
                               const std::vector<cost_t>&) const = 0;
 
 };
@@ -48,7 +48,7 @@ class Accept1st : public Accept<  cost_t, compare >
 {
 public:
 
-    virtual  AcceptResult get(const cost_t& best_so_far,
+    virtual  AcceptResult operator()(const cost_t& best_so_far,
                               const std::vector<cost_t>& results) const {
         for(unsigned i = 0; i < results.size(); ++i){
             if ( compare(results[i],best_so_far) )
@@ -64,7 +64,7 @@ class AcceptBest : public Accept<  cost_t, compare >
 {
 public:
 
-    virtual  AcceptResult get(const cost_t& best_so_far,
+    virtual  AcceptResult operator()(const cost_t& best_so_far,
                               const std::vector<cost_t>& results) const {
 
         const auto unchanged = std::numeric_limits<unsigned>::max();

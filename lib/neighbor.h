@@ -11,7 +11,7 @@ class Neighbor : public NonCopyable
 public:
 
     virtual ~Neighbor() = default;
-    virtual std::vector<solution_t> get(const solution_t &) const = 0;
+    virtual std::vector<solution_t> operator()(const solution_t &) = 0;
 };
 }
 

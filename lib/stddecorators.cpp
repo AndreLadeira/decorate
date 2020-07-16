@@ -2,9 +2,9 @@
 
 using namespace onion;
 
-bool LoopCallsCounter::running()
+bool LoopCallsCounter::operator()()
 {
-    auto isrunning = DecoratorBase::_ptr->running();
+    auto isrunning = this->_next->operator()();
     if ( isrunning ) this->count();
     return isrunning;
 }

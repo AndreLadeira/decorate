@@ -88,7 +88,7 @@ static map<data_loader_id, const DataLoader& > DataLoaders = {
 }// end of anonymous namespace
 
 
-tsp_problem_data_t tsp_tsplibDataLoader::load(istream& is) const
+tsp_problem_data_t tsp_tsplibDataLoader::operator()(istream& is)
 try
 {
     map<string,string>  data_section;
@@ -154,10 +154,10 @@ std::ostream& path::operator<<(std::ostream &os, const path_t &path)
     return os;
 }
 
-bitmatrix_t bitmatrix::CreateRandom::create(){
+bitmatrix_t bitmatrix::CreateRandom::operator()(){
     bitmatrix_t matrix(_size,_size);
 
-    return bitmatrix_t( to_bitmatrix( path::CreateRandom(_size).create() ));
+    return bitmatrix_t( to_bitmatrix( path::CreateRandom(_size)() ));
 }
 
 
@@ -212,7 +212,7 @@ path_t _2optSwap(const path_t& path, unsigned start, unsigned length)
 
 _2optSingle::_2optSingle(unsigned length):_length(length){}
 
-std::vector<path_t> _2optSingle::get(const path_t &path) const
+std::vector<path_t> _2optSingle::operator()(const path_t &path)
 {
 
     const unsigned sz   = static_cast<unsigned>(path.size());
@@ -226,7 +226,7 @@ std::vector<path_t> _2optSingle::get(const path_t &path) const
 
 _2optAll::_2optAll(unsigned length):_length(length){}
 
-std::vector<path_t> _2optAll::get(const path_t &path) const
+std::vector<path_t> _2optAll::operator()(const path_t &path)
 {
     const unsigned sz   = static_cast<unsigned>(path.size());
     auto length         = _length;
@@ -241,32 +241,20 @@ std::vector<path_t> _2optAll::get(const path_t &path) const
     return std::vector<path_t>( res );
 }
 
-path::Objective::cost_t path::Objective::get(const path_t &p)
+path::AbstractObjective::cost_type path::Objective::operator()(const path_t &p)
 {
     const auto & sz = p.size();
-    cost_t cost = 0;
+    path::AbstractObjective::cost_type cost = 0;
     for(unsigned i = 0; i < sz-1; ++i)
         cost += _data.at(p[i]).at(p[i+1]);
     return cost;
-}
-
-std::vector<path::Objective::cost_t>
-path::Objective::get(const std::vector<path_t>& candidates)
-{
-    std::vector<cost_t> costs;
-    costs.reserve(candidates.size());
-
-    for( const auto& c : candidates)
-        costs.push_back( this->get(c));
-
-    return std::vector<path::Objective::cost_t>(costs);
 }
 
 path::Objective::Objective(const tsp_problem_data_t &d):
     onion::Objective<path_t,tsp_problem_data_t>(d){}
 
 
-std::vector<path_t> MaskReinsert::get(const path_t &path) const
+std::vector<path_t> MaskReinsert::operator()(const path_t &path)
 {
     const unsigned sz   = static_cast<unsigned>(path.size());
     auto length         = _length;
@@ -302,14 +290,8 @@ std::vector<path_t> MaskReinsert::get(const path_t &path) const
     return vector<path_t>(results);
 }
 
-std::vector<bitmatrix::Objective::cost_t>
-bitmatrix::Objective::get(const std::vector<bitmatrix_t> &)
-{
+//bitmatrix::Objective::cost_t
+//bitmatrix::Objective::get(const bitmatrix_t &)
+//{
 
-}
-
-bitmatrix::Objective::cost_t
-bitmatrix::Objective::get(const bitmatrix_t &)
-{
-
-}
+//}

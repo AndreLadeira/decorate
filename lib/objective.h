@@ -8,17 +8,26 @@ namespace onion{
 
 template< typename solution_t,
           typename problem_data_t,
-          typename _cost_t = unsigned >
-class Objective : public NonCopyable
+          typename cost_t = unsigned >
+class Objective
 {
 public:
 
     explicit Objective(const problem_data_t& d = problem_data_t() ):_data(d){}
     virtual ~Objective() = default;
-    using cost_t = _cost_t;
+    using cost_type = cost_t;
 
-    virtual std::vector<cost_t> get(const std::vector<solution_t>& S) = 0;
-    virtual cost_t get(const solution_t&) = 0;
+    virtual cost_type operator()(const solution_t&) = 0;
+
+    virtual std::vector<cost_type> operator()(const std::vector<solution_t>& S){
+        std::vector<cost_type> costs;
+        costs.reserve(S.size());
+
+        for( const auto& s : S)
+            costs.push_back( (*this)(s) );
+
+        return std::vector<cost_type>(costs);
+    }
 
 protected:
 
