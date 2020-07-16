@@ -25,7 +25,7 @@ using tsp_problem_data_t = onion::matrix_of<unsigned>;
 class tsp_tsplibDataLoader : public onion::DataLoader<tsp_problem_data_t>
 {
 public:
-   tsp_problem_data_t load(std::istream& is) const;
+   tsp_problem_data_t operator()(std::istream& is);
 };
 
 namespace path{
@@ -39,15 +39,13 @@ private:
     size_t _size;
 };
 
-using ObjectiveBase = onion::Objective<path_t,tsp_problem_data_t>;
+using AbstractObjective = onion::Objective<path_t,tsp_problem_data_t>;
 
-class Objective : public ObjectiveBase{
+class Objective : public AbstractObjective{
 public:
 
     Objective(const tsp_problem_data_t& d);
-    using cost_t = ObjectiveBase::cost_t;
-    virtual std::vector<cost_t> get(const std::vector<path_t>&);
-    virtual cost_t get(const path_t&);
+    virtual AbstractObjective::cost_type operator()(const path_t&);
 };
 
 std::ostream& operator<<(std::ostream &os, const path_t &path);
@@ -55,7 +53,7 @@ std::ostream& operator<<(std::ostream &os, const path_t &path);
 class _2optSingle : public onion::Neighbor<path_t>{
 public:
     _2optSingle(unsigned length=0);
-    std::vector<path_t> get(const path_t& path) const;
+    std::vector<path_t> operator()(const path_t& path);
 private:
     unsigned _length;
 };
@@ -63,7 +61,7 @@ private:
 class _2optAll : public onion::Neighbor<path_t>{
 public:
     _2optAll(unsigned length = 0);
-    std::vector<path_t> get(const path_t& path) const;
+    std::vector<path_t> operator()(const path_t& path);
 private:
     unsigned _length;
 };
@@ -71,7 +69,7 @@ private:
 class MaskReinsert : public onion::Neighbor<path_t>{
 public:
     MaskReinsert(unsigned length = 0):_length(length){}
-    std::vector<path_t> get(const path_t& path) const;
+    std::vector<path_t> operator()(const path_t& path);
 private:
     unsigned _length;
 };
@@ -89,7 +87,7 @@ class CreateRandom : public onion::Creator< bitmatrix_t >
 {
 public:
     CreateRandom(size_t sz):_size(sz){}
-    virtual bitmatrix_t create(void);
+    virtual bitmatrix_t operator()(void);
 private:
     size_t _size;
 };
@@ -100,8 +98,7 @@ class Objective : public ObjectiveBase{
 public:
 
     Objective(const tsp_problem_data_t& d);
-    using cost_t = ObjectiveBase::cost_t;
-    virtual std::vector<cost_t> get(const std::vector<bitmatrix_t>&);
+    using cost_t = ObjectiveBase::cost_type;
     virtual cost_t get(const bitmatrix_t&);
 };
 

@@ -25,7 +25,7 @@ Parameter ParameterList::getValue(string _key) const
         return Parameter();
 }
 
-void ParameterList::set(const string &_key, const string &_value){
+void ParameterList::set(const string& _key, const string& _value){
     _list[_key] = Parameter(_value);
 }
 
@@ -33,7 +33,7 @@ void ParameterList::clear(){
     _list.clear();
 }
 
-void ParameterLoader::load(istream &is, ParameterList &paramList) const
+void ParameterLoader::operator()(istream& is, ParameterList& paramList)
 {
     paramList.clear();
     while(!is.eof())

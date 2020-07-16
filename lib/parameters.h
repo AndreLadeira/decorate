@@ -5,6 +5,7 @@
 #include <map>
 #include <istream>
 #include <sstream>
+#include "facilities.h"
 
 namespace onion
 {
@@ -50,13 +51,13 @@ private:
     std::map<std::string,Parameter> _list;
 };
 
-class ParameterLoader
+class ParameterLoader : public NonCopyable
 {
 public:
     ParameterLoader() = default;
     virtual ~ParameterLoader() = default;
 
-    virtual void load(std::istream& is, ParameterList& paramList) const;
+    virtual void operator()(std::istream& is, ParameterList& paramList);
 };
 
 }

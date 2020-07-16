@@ -16,6 +16,7 @@ public:
     virtual ~__Trigger() = default;
     virtual bool activated() const = 0;
     virtual void reset() = 0;
+    virtual void hardReset() = 0;
 };
 
 
@@ -35,6 +36,9 @@ public:
     virtual void reset(){
         _value.reset();
     }
+    virtual void hardReset(){
+        _value.hardReset();
+    }
 
 private:
 
@@ -51,13 +55,14 @@ public:
 
     LoopController() = default;
     virtual ~LoopController() = default;
-    virtual bool running();
+    virtual bool operator()();
 
     template<typename T> void addTrigger( const Trigger<T>& t){
         _triggers.push_back( std::make_shared<Trigger<T>>(t) );
     }
 
-    void resetTriggers();
+    void reset();
+    void hardReset();
 
     std::string getTrigger() const;
 

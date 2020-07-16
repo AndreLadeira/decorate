@@ -2,7 +2,9 @@
 
 using namespace onion;
 
-Timer::Timer(bool startnow){ if (startnow) start();}
+Timer::Timer(bool startnow, bool resetable):
+    Value<double>(resetable)
+{ if (startnow) start();}
 
 void Timer::start()
 {
@@ -13,13 +15,14 @@ void Timer::reset()
 {
     start();
 }
+void Timer::hardReset()
+{
+    reset();
+}
 
 double Timer::getValue() const
 {
     return static_cast<double>(clock() - begin) / CLOCKS_PER_SEC;
 }
 
-void Counter::reset(){
-    if ( _resetable )
-        Value<unsigned>::reset();
-}
+void Counter::count(unsigned amount)  { this->_v += amount;}

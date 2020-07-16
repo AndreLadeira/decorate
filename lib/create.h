@@ -6,7 +6,7 @@
 namespace onion {
 
 template< typename solution_t >
-class Creator : NonCopyable
+class Creator : public NonCopyable
 {
 public:
 

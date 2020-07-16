@@ -5,7 +5,7 @@
 #include <iomanip> // setprecision
 #include <cassert>
 
-#include "lib/onion.h"
+#include "lib/onionmh.h"
 #include "mh/rrga.h"
 #include "lib/stddecorators.h"
 
@@ -17,97 +17,114 @@ using tsp::path::operator<<;
 int main(int argc, char* argv[])
 try
 {
+
     stringstream ss;
     for(int i = 1; i < argc; i++ ) ss << argv[i] << " ";
 
-    Decorator<ParameterLoader> ploader;
-    ParameterList plist;
+    Onion<ParameterLoader> loadParameters;
+    ParameterList parameters;
 
-    ploader.decorate_with<mh::RRGAParametersChecker>();
-    ploader->load(ss,plist);
+    loadParameters.addLayer<mh::RRGAParametersChecker>();
+    loadParameters(ss,parameters);
 
-    ifstream data_file( plist.getValue("file_name") );
+    ifstream data_file( parameters.getValue("file_name") );
     data_file.exceptions( istream::failbit | istream::badbit  );
 
-    auto data = cops::tsp::tsp_tsplibDataLoader().load(data_file);
+    auto data = cops::tsp::tsp_tsplibDataLoader()(data_file);
 
-    Decorator<LoopController> outerloop;
-    outerloop.decorate_with< LoopCallsCounter >();
+    Onion<LoopController> outerloop;
+    outerloop.addLayer< LoopCallsCounter >();
 
-    Decorator<LoopController> innerloop;
-    innerloop.decorate_with< LoopCallsCounter >();
+    Onion<LoopController> innerloop;
+    innerloop.addLayer< LoopCallsCounter >();
 
-    Decorator< tsp::path::Creator > creator( new tsp::path::CreateRandom(data.size()) );
-    creator.decorate_with< tsp::path::CreatorCallsCounter >();
+    Onion<LoopController> repetitionsloop;
+    repetitionsloop.addLayer< LoopCallsCounter >();
 
-    Decorator< tsp::path::Neighbor > neighborhood( new tsp::path::MaskReinsert() );
-    //Decorator< tsp::path::Neighbor > neighborhood( new tsp::path::_2optSingle() );
-    //Decorator< tsp::path::Neighbor > neighborhood( new tsp::path::_2optAll() );
 
-    Decorator< tsp::path::ObjectiveBase >
-            objective( new tsp::path::Objective(data) );
-    objective.decorate_with< tsp::path::ObjectiveCallsCounter >(false);
+    Onion< tsp::path::Creator > create( make_shared<tsp::path::CreateRandom>( data.size() ) );
+    create.addLayer< tsp::path::CreatorCallsCounter >();
 
-    Decorator< tsp::AcceptBest > accept;
-    Decorator< tsp::path::Updater > updateInner, updateOuter;
 
-    updateOuter.decorate_with< min::UpdateStagnationCounter<tsp::path_t> >();
-    Timer timer;
-    //outerloop.staticObject().addTrigger( Trigger<double>("Timer",timer,2.0));
-//    outerloop().addTrigger( Trigger<>("Exploration loops",
-//                                      outerloop.as<Counter>(),
-//                                      plist.getValue("outer_loops").as<unsigned>()));
-//    outerloop().addTrigger( Trigger<>("Create calls",creator.as<Counter>(),
-//                                                     100));
+    Onion< tsp::path::Neighbor > neighborhood( make_shared<tsp::path::MaskReinsert>() );
+    //Onion< tsp::path::Neighbor > neighborhood( make_shared<tsp::path::_2optSingle>() );
+    //Onion< tsp::path::Neighbor > neighborhood( make_shared<tsp::path::_2optAll>() );
 
-    outerloop.staticObject().addTrigger( Trigger<>("Objective fcn calls",objective.as<Counter>(),1e6));
-    //innerloop.staticObject().addTrigger( Trigger<double>("Timer",timer,2.0));
-    innerloop.staticObject().addTrigger( Trigger<>("Intensification loops",
+    Onion< tsp::path::AbstractObjective > objective( make_shared<tsp::path::Objective >(data) );
+    objective.addLayer< tsp::path::ObjectiveCallsCounter >(false);
+
+    Onion< tsp::AcceptBest > accept;
+    Onion< tsp::path::Updater > updateInner, updateOuter;
+
+    updateOuter.addLayer< min::UpdateStagnationCounter<tsp::path_t> >();
+    //outerloop.core().addTrigger( Trigger<double>("Timer",Timer(),1.0));
+    outerloop.core().addTrigger( Trigger<>("Exploration loops",
+                                      outerloop.as<LoopCallsCounter>(),
+                                      parameters.getValue("outer_loops").as<unsigned>()));
+//    outerloop.core().addTrigger( Trigger<>("Create calls",create.as<Counter>(),100));
+
+    outerloop.core().addTrigger( Trigger<>("Objective fcn calls",objective.as<Counter>(),1e6));
+    innerloop.core().addTrigger( Trigger<>("Intensification loops",
                                       innerloop.as<Counter>(),
-                                      plist.getValue("inner_loops").as<unsigned>()));
-    innerloop.staticObject().addTrigger( Trigger<>("Objective fcn calls",objective.as<Counter>(),1e6));
-//    innerloop().addTrigger( Trigger<double>("Inner loop timer",Timer(),0.01));
+                                      parameters.getValue("inner_loops").as<unsigned>()));
+    innerloop.core().addTrigger( Trigger<>("Objective fcn calls",objective.as<Counter>(),1e6));
+    //innerloop.core().addTrigger( Trigger<double>("Inner loop timer",Timer(),1.0));
 
-//    outerloop().addTrigger( Trigger<>("Stagnation Counter",
+//    outerloop.core().addTrigger( Trigger<>("Stagnation Counter",
 //                                      updateOuter.as<Counter>(),
 //                                      20));
-    tsp::path_t best;
-    unsigned best_cost = numeric_limits<unsigned>::max();
+    repetitionsloop.core().addTrigger( Trigger<>("Repetitions",
+                                                 repetitionsloop.as<Counter>(),
+                                                 /*parameters.getValue("repetitions").as<unsigned>()*/ 2));
 
-    outerloop.staticObject().resetTriggers();
-
-    while( outerloop->running() )
+    while( repetitionsloop() )
     {
+<<<<<<< HEAD
         auto current = creator->create();
         auto current_cost = objective->get( current );
+=======
+        //onion::reset_random_engine();
 
-        innerloop.staticObject().resetTriggers();
+        tsp::path_t best;
+        unsigned best_cost = numeric_limits<unsigned>::max();
+>>>>>>> functors
 
-        while( innerloop->running() )
+        outerloop.core().hardReset();
+        innerloop.core().hardReset();
+        create.as<Counter>().hardReset();
+
+        Timer timer(true);
+
+        while( outerloop() )
         {
-            auto neighbor = neighborhood->get(current);
-            auto newcost = objective->get( neighbor );
-            auto accepted = accept->get( current_cost, newcost );
-            if ( accepted )
-                updateInner->update(current, current_cost,
-                                    neighbor.at(accepted.get()),
-                                    newcost.at(accepted.get()));
+            auto current = create();
+            auto current_cost = objective( current );
+
+            while( innerloop() )
+            {
+                auto neighbor = neighborhood(current);
+                auto newcost = objective( neighbor );
+                auto accepted = accept( current_cost, newcost );
+                if ( accepted )
+                    updateInner(current, current_cost,
+                                neighbor.at(accepted.index()),
+                                newcost.at(accepted.index()));
+            }
+            updateOuter(best,best_cost,current,current_cost);
+            innerloop.core().reset();
         }
-        updateOuter->update(best,best_cost,current,current_cost);
-    }
 
-    cout<< "Execution stop triggered by         : " << outerloop.staticObject().getTrigger() << endl;
-    cout<< "Execution time                      : " << fixed << setprecision(4) << timer.getValue() << "s\n";
-    cout<< "Times create called                 : " << creator.as<Counter>().getValue() << endl;
-    cout<< "Times objective called              : " << objective.as<Counter>().getValue() << endl;
-    cout<< "Outer loops count                   : " << outerloop.as<Counter>().getValue() << endl;
-    cout<< "Final result                        : " << best_cost << endl;
-    cout<< "Final path                          : " << best;
-
+        cout<< "\nExecution stop triggered by         : " << outerloop.core().getTrigger() << endl;
+        cout<< "Execution time                      : " << fixed << setprecision(4) << timer.getValue() << "s\n";
+        cout<< "Times create called                 : " << create.as<Counter>().getValue() << endl;
+        cout<< "Times objective called              : " << objective.as<Counter>().getValue() << endl;
+        cout<< "Outer loops count                   : " << outerloop.as<Counter>().getValue() << endl;
+        cout<< "Final result                        : " << best_cost << endl;
+        cout<< "Final path                          : " << best;
 #ifdef __DEBUG__
-    assert(best_cost = objective->get(best));
+        assert(best_cost = objective(best));
 #endif
-
+    }
 
 }
 catch(runtime_error& e){

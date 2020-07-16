@@ -16,7 +16,7 @@ public:
     Updater() = default;
     virtual ~Updater() = default;
 
-    virtual bool update(solution_t& bestSoFar, cost_t& bsfCost,
+    virtual bool operator()(solution_t& bestSoFar, cost_t& bsfCost,
                             const solution_t& candidate, const cost_t candidateCost )  {
         if ( _compare(candidateCost, bsfCost) ){
             bsfCost = candidateCost;

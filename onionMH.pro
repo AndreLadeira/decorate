@@ -1,5 +1,5 @@
 TEMPLATE = app
-CONFIG += console c++11
+CONFIG += console c++14
 CONFIG -= app_bundle
 CONFIG -= qt
 
@@ -20,13 +20,11 @@ HEADERS += \
     cops/tsp.h \
     cops/sat.h \
     lib/facilities.h \
-    lib/onion.h \
     garbage.h \
     lib/dataload.h \
     cops/mkp.h \
     test/dataloaders.h \
     lib/parameters.h \
-    lib/decorator.h \
     mh/rrga.h \
     lib/create.h \
     lib/neighbor.h \
@@ -37,11 +35,14 @@ HEADERS += \
     lib/loopcontroller.h \
     lib/stddecorators.h \
     lib/types.h \
-    lib/random.h
+    lib/random.h \
+    lib/onionmh.h \
+    lib/onion.h
 
 CONFIG(debug, debug|release) {
     DEFINES += "__DEBUG__"
 }
 CONFIG(release, debug|release) {
     macx | linux: QMAKE_CXXFLAGS += -O3
+    DEFINES -= "__DEBUG__"
 }
