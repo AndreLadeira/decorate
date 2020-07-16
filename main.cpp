@@ -79,15 +79,11 @@ try
 
     while( repetitionsloop() )
     {
-<<<<<<< HEAD
-        auto current = creator->create();
-        auto current_cost = objective->get( current );
-=======
+
         //onion::reset_random_engine();
 
         tsp::path_t best;
         unsigned best_cost = numeric_limits<unsigned>::max();
->>>>>>> functors
 
         outerloop.core().hardReset();
         innerloop.core().hardReset();

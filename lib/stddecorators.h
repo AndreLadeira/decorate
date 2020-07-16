@@ -32,13 +32,7 @@ public:
     CreatorCallsCounter( typename OnionLayer<Creator<solution_t>>::core_ptr_t next):
         OnionLayer<Creator<solution_t>>(next){}
 
-<<<<<<< HEAD
-    CreatorCallsCounter(typename DecoratorBase::ptr_t ptr):
-        DecoratorBase(ptr){}
-    virtual solution_t create(){
-=======
     virtual solution_t operator()(){
->>>>>>> functors
         this->count();
         return this->_next->operator()();
     }
