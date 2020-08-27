@@ -37,7 +37,7 @@ class ParameterList
 public:
 
     ParameterList() = default;
-    Parameter getValue(std::string _key) const;
+    Parameter operator()(std::string _key) const;
 
 protected:
 

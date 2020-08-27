@@ -79,6 +79,7 @@ public:
         _outerLayer = newlayer;
         return *this;
     }
+
     template<class LayerType, class LayerParamType>
     Onion<CoreType>& addLayer(LayerParamType p){
 

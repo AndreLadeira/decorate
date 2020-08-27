@@ -10,6 +10,7 @@
 #include "neighbor.h"
 #include "objective.h"
 #include "parameters.h"
+#include "timer.h"
 #include "update.h"
 #include "random.h"
 

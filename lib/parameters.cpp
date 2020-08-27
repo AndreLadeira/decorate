@@ -17,7 +17,7 @@ onion::Parameter::operator std::string() const{
     return str();
 }
 
-Parameter ParameterList::getValue(string _key) const
+Parameter ParameterList::operator()(string _key) const
 {
     if ( _list.find(_key) != _list.end())
         return _list.at(_key);
@@ -47,6 +47,6 @@ void ParameterLoader::operator()(istream& is, ParameterList& paramList)
         if ( regex_search(param,match,exp) )
             paramList.set(match[1].str(), match[2].str());
     }
-    if ( paramList.getValue("file_name").str() == "" )
+    if ( paramList("file_name").str() == "" )
         throw runtime_error("ParameterLoader: mandatory <file_name> parameter missing");
 }

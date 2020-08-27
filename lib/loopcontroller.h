@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 
-
 #include "facilities.h"
+#include "abstractvalues.h"
 
 namespace onion{
 
@@ -16,7 +16,6 @@ public:
     virtual ~__Trigger() = default;
     virtual bool activated() const = 0;
     virtual void reset() = 0;
-    virtual void hardReset() = 0;
 };
 
 
@@ -25,26 +24,26 @@ class Trigger : public __Trigger
 {
 public:
 
-    Trigger(std::string label, Value<T>& v, T limit, Compare<T> c = Compare<T>::greater_or_equal ):
-        __Trigger(label),_value(v),_limit(limit),_compare(c){}
-    Trigger(std::string label, Value<T>&& v, T limit, Compare<T> c = Compare<T>::greater_or_equal ):
-        __Trigger(label),_value(v),_limit(limit),_compare(c){}
+    Trigger(std::string label, AResettableValue<T>& v, T limit, bool external = false, Compare<T> c = Compare<T>::greater_or_equal ):
+        __Trigger(label),_value(v),_limit(limit),_compare(c),_external(external){}
+    Trigger(std::string label, AResettableValue<T>&& v, T limit, bool external = false, Compare<T> c = Compare<T>::greater_or_equal ):
+        __Trigger(label),_value(v),_limit(limit),_compare(c),_external(external){}
 
     virtual bool activated() const{
         return _compare( _value.getValue(), _limit );
     }
     virtual void reset(){
-        _value.reset();
+        if (!_external) _value.reset();
     }
-    virtual void hardReset(){
-        _value.hardReset();
-    }
+
 
 private:
 
-    Value<T>& _value;
+    AResettableValue<T>& _value;
     const T _limit;
     Compare<T> _compare;
+    bool _external;
+
 };
 
 
@@ -62,7 +61,6 @@ public:
     }
 
     void reset();
-    void hardReset();
 
     std::string getTrigger() const;
 

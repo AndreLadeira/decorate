@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-/* objectives: pass state along allowing
+objectives: pass state along allowing
 
     - code reuse (minimize or eliminate code change when changing state)
     - Code that HAS to change: all local classes
@@ -25,7 +25,7 @@ struct coreState // read and write
    signed best = 1000;
 };
 
-/*
+
  * Definition: defines a contract where developers are required to create
  *             a class for holding MH parameters and another to initialize
  *             them from some data source
@@ -92,7 +92,7 @@ private:
     coreState _s;
 };
 
-/* Good: clear contract, easily creation of required readonly
+ Good: clear contract, easily creation of required readonly
 *       behaviour, pretty basic and straightforward OOP stuff.
 *
 * Bad: forces developers to create ad-hoc classes for every MH
@@ -539,3 +539,52 @@ using matrixOfInts = Matrix< signed >;
 #endif // TYPES_H
 
 */
+
+
+/*
+ *
+ *
+
+
+        updateOuter.as<tsp::path::UpdateRecorder>().clear();
+
+        updateOuter.as<tsp::path::UpdateRecorder>().addRecord(
+                    "best x obj. fcn. calls",
+                    Record<unsigned,unsigned>(objective.as<Counter>(),BoundValue<unsigned>(best_cost)) );
+
+        updateOuter.as<tsp::path::UpdateRecorder>().addRecord(
+                    "best x time",
+                    Record<double,unsigned>(timer,BoundValue<unsigned>(best_cost)) );
+
+        updateOuter.as<tsp::path::UpdateRecorder>().start();
+        updateOuter.as<tsp::path::UpdateRecorder>().record(); // record initial values
+
+//        objective.as<tsp::path::ObjectiveRecorder>().clear();
+
+//        objective.as<tsp::path::ObjectiveRecorder>().addRecord(
+//                    "best x obj. fcn. calls",
+//                    Record<unsigned,unsigned>(objective.as<Counter>(),BoundValue<unsigned>(best_cost)) );
+
+//        objective.as<tsp::path::ObjectiveRecorder>().addRecord(
+//                    "best x time",
+//                    Record<double,unsigned>(timer,BoundValue<unsigned>(best_cost)) );
+
+//        objective.as<tsp::path::ObjectiveRecorder>().start();
+//        objective.as<tsp::path::ObjectiveRecorder>().record(); // record initial values
+
+        updateInner.as<tsp::path::UpdateRecorder>().clear();
+        updateInner.as<tsp::path::UpdateRecorder>().addRecord(
+                    "best x int. loop calls",
+                    Record<unsigned,unsigned>(innerloop.as<Counter>(),BoundValue<unsigned>(current_cost)) );
+
+
+                    */
+
+/*
+
+    cout<< "\nExecution stop triggered by       : " << outerloop.core().getTrigger() << endl;
+    cout<< "Execution time                      : " << fixed << setprecision(4) << timer.getValue() << "s\n";
+    cout<< "Final result                        : " << best_cost << endl;
+    cout<< "Final path                          : " << best;
+
+ */

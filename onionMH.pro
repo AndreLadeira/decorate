@@ -13,7 +13,9 @@ SOURCES += \
     lib/loopcontroller.cpp \
     lib/facilities.cpp \
     lib/stddecorators.cpp \
-    lib/random.cpp
+    lib/random.cpp \
+    lib/abstractvalues.cpp \
+    lib/timer.cpp
 
 HEADERS += \
     lib/algorithm.h \
@@ -37,7 +39,10 @@ HEADERS += \
     lib/types.h \
     lib/random.h \
     lib/onionmh.h \
-    lib/onion.h
+    lib/onion.h \
+    lib/recorder.h \
+    lib/abstractvalues.h \
+    lib/timer.h
 
 CONFIG(debug, debug|release) {
     DEFINES += "__DEBUG__"
