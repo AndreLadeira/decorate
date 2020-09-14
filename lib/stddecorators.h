@@ -17,8 +17,8 @@ class LoopCallsCounter :
         public OnionLayer<LoopController>
 {
 public:
-    LoopCallsCounter(OnionLayer<LoopController>::core_ptr_t next):
-        OnionLayer<LoopController>(next){}
+    LoopCallsCounter(OnionLayer<LoopController>::core_ptr_t next, bool locked = false):
+        ResettableCounter(0,locked), OnionLayer<LoopController>(next){}
     virtual bool operator()();
 };
 
@@ -41,8 +41,8 @@ class CreatorCallsCounter:
 {
 public:
 
-    CreatorCallsCounter( typename OnionLayer<Creator<solution_t>>::core_ptr_t next):
-        OnionLayer<Creator<solution_t>>(next){}
+    CreatorCallsCounter( typename OnionLayer<Creator<solution_t>>::core_ptr_t next, bool locked = false):
+        ResettableCounter(0,locked),OnionLayer<Creator<solution_t>>(next){}
 
     virtual solution_t operator()(){
         this->count();
@@ -62,8 +62,8 @@ class UpdateStagnationCounter :
 public:
     using OnionLayerBase = OnionLayer<Updater<solution_t,cost_t,c>>;
 
-    UpdateStagnationCounter(typename OnionLayerBase::core_ptr_t next):
-        OnionLayerBase(next){}
+    UpdateStagnationCounter(typename OnionLayerBase::core_ptr_t next, bool locked = false):
+        ResettableCounter(0,locked),OnionLayerBase(next){}
 
     virtual bool operator()(solution_t& bestSoFar,
                         cost_t& bsfCost,
@@ -141,8 +141,8 @@ class ObjectiveCallsCounter :
 public:
     using OnionLayer = OnionLayer<Objective<solution_t,problem_data_t, cost_t>>;
 
-    ObjectiveCallsCounter(typename OnionLayer::core_ptr_t next, bool locked = true):
-        AResettable(locked),OnionLayer(next){}
+    ObjectiveCallsCounter(typename OnionLayer::core_ptr_t next, bool locked = false):
+        ResettableCounter(0,locked),OnionLayer(next){}
 
     virtual cost_t operator()(const solution_t& s) {
         this->count();

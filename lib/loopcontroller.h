@@ -5,7 +5,8 @@
 #include <vector>
 
 #include "facilities.h"
-#include "abstractvalues.h"
+#include "values.h"
+#include "observer.h"
 
 namespace onion{
 
@@ -24,9 +25,9 @@ class Trigger : public __Trigger
 {
 public:
 
-    Trigger(std::string label, AResettableValue<T>& v, T limit, bool external = false, Compare<T> c = Compare<T>::greater_or_equal ):
+    Trigger(std::string label, ResettableValue<T>& v, T limit, bool external = false, Compare<T> c = Compare<T>::greater_or_equal ):
         __Trigger(label),_value(v),_limit(limit),_compare(c),_external(external){}
-    Trigger(std::string label, AResettableValue<T>&& v, T limit, bool external = false, Compare<T> c = Compare<T>::greater_or_equal ):
+    Trigger(std::string label, ResettableValue<T>&& v, T limit, bool external = false, Compare<T> c = Compare<T>::greater_or_equal ):
         __Trigger(label),_value(v),_limit(limit),_compare(c),_external(external){}
 
     virtual bool activated() const{
@@ -39,7 +40,7 @@ public:
 
 private:
 
-    AResettableValue<T>& _value;
+    ResettableValue<T>& _value;
     const T _limit;
     Compare<T> _compare;
     bool _external;
@@ -48,11 +49,13 @@ private:
 
 
 
-class LoopController : public NonCopyable
+class LoopController :
+        public NonCopyable,
+        public Subject
 {
 public:
 
-    LoopController() = default;
+    LoopController():_loopCount(0){}
     virtual ~LoopController() = default;
     virtual bool operator()();
 
@@ -64,10 +67,15 @@ public:
 
     std::string getTrigger() const;
 
+    const unsigned& getLoopCount(){
+        return _loopCount;
+    }
+
 private:
     using trigger_ptr_t = std::shared_ptr<__Trigger>;
     std::vector<trigger_ptr_t> _triggers;
     std::string _triggerID;
+    unsigned _loopCount;
 };
 
 

@@ -5,7 +5,9 @@ using namespace onion;
 bool LoopCallsCounter::operator()()
 {
     auto isrunning = this->_next->operator()();
-    if ( isrunning ) this->count();
+    if ( isrunning ) {
+        ResettableCounter::count();
+    }
     return isrunning;
 }
 

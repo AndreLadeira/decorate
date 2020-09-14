@@ -15,7 +15,8 @@ SOURCES += \
     lib/stddecorators.cpp \
     lib/random.cpp \
     lib/abstractvalues.cpp \
-    lib/timer.cpp
+    lib/timer.cpp \
+    lib/values.cpp
 
 HEADERS += \
     lib/algorithm.h \
@@ -41,8 +42,10 @@ HEADERS += \
     lib/onionmh.h \
     lib/onion.h \
     lib/recorder.h \
-    lib/abstractvalues.h \
-    lib/timer.h
+    lib/timer.h \
+    lib/values.h \
+    lib/observer.h \
+    lib/trackstats.h
 
 CONFIG(debug, debug|release) {
     DEFINES += "__DEBUG__"

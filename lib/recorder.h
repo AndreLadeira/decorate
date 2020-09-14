@@ -3,118 +3,102 @@
 
 #include <vector>
 #include <list>
-#include <numeric> // accumulate
-#include <cmath>   // sqrt
-#include <map>
-#include <string>
-#include <memory>
-#include <functional> // reference_wrapper
+#include "values.h"
+#include "observer.h"
 
-#include "abstractvalues.h"
+namespace onion {
 
-namespace onion{
-
-
-class _Track{
+class __Track{
 public:
-    virtual ~_Track() = default;
+    virtual ~__Track() = default;
     virtual void record() = 0;
     virtual void clear() = 0;
     virtual size_t size() const = 0;
 };
 
-template<typename X, typename Y>
-struct Stats;
+template<typename T>
+struct TrackStats;
 
-template<typename X, typename Y>
-class Track;
-
-template <typename X, typename Y>
-std::ostream& operator<<(std::ostream& os, const Track<X,Y>& record);
-
-template<typename X = unsigned, typename Y = unsigned>
-class Track : public _Track
+template<typename T>
+class Track : public __Track
 {
 public:
-    Track(const AValue<X>& xsource, const AValue<Y>& ysource):
-        _xsource(xsource),_ysource(ysource){}
+    explicit Track(const AValue<T>& source):
+        _source(source){}
     virtual ~Track() = default;
 
     virtual void record(){
-        _xrecord.push_back(_xsource.getValue());
-        _yrecord.push_back(_ysource.getValue());
+        _record.push_back(_source.getValue());
     }
     virtual void clear(){
-        _xrecord.clear();
-        _yrecord.clear();
+        _record.clear();
     }
-    virtual size_t size() const { return _xrecord.size(); }
+    virtual size_t size() const {
+        return _record.size();
+    }
 
-    virtual std::vector<X> getX() const { return get<X>(_xrecord); }
-    virtual std::vector<Y> getY() const { return get<Y>(_yrecord); }
+    virtual std::vector<T> getTrack() const {
+        return std::vector<T>( _record.cbegin(), _record.cend());
+    }
 
 private:
 
-    const AValue<X>& _xsource;
-    const AValue<Y>& _ysource;
+    friend struct TrackStats<T>;
 
-    std::list<X> _xrecord;
-    std::list<Y> _yrecord;
-
-    template<typename V> std::vector<V> get(const std::list<V>& list) const{
-        return std::vector<V>(list.cbegin(), list.cend());
-    }
-
-    friend std::ostream& operator<<(std::ostream& os, const Track<X,Y>& r);
-    friend struct Stats<X,Y>;
+    const AValue<T>& _source;
+    std::list<T> _record;
 
 };
 
-template<typename X = unsigned, typename Y = unsigned>
-struct Stats
+template<typename T>
+class MultiTrack :
+        public __Track,
+        public Observer
 {
-    Stats(const Track<X,Y>& r):_track(r){}
+public:
+    explicit MultiTrack(const AValue<T>& source, Subject& trigger):
+        _source(source){
+        trigger.add(*this);
+    }
+    virtual ~MultiTrack() = default;
 
-    double average() const {
-        if ( _track.size() ){
-            Y sum = std::accumulate(_track._yrecord.cbegin(), _track._yrecord.cend(), Y(0) );
-            return static_cast<double>(sum) / _track.size();
-        }else return 0;
+    virtual void record(){
+        _track.push_back( _source.getValue() );
     }
-    Y min() const {
-      return *std::min_element(_track._yrecord.cbegin(), _track._yrecord.cend());
+    virtual void clear(){
+        _record.clear();
+        _track.clear();
+
     }
-    Y max() const {
-      return *std::max_element(_track._yrecord.cbegin(), _track._yrecord.cend());
+    virtual size_t size() const {
+            return _record.size();
     }
-    double stdDev() const {
-        if ( _track.size() ){
-            double avg = average();
-            double accum = 0.0;
-            for(const auto&y : _track._yrecord)
-                accum += (y - avg) * (y - avg);
-            return std::sqrt( accum / _track.size() );
-        }else return 0;
+
+    virtual std::vector<T> getTrack(unsigned track) const {
+        if (track > _record.size() )
+            return std::vector<T>();
+        else
+            return std::vector<T>( _record.at(track).cbegin(), _record.at(track).cend());
+    }
+
+    virtual void update(){
+        if ( _track.size() != 0 ) {
+            _record.push_back(_track);
+            _track.clear();
+        }
     }
 
 private:
 
-    const Track<X,Y>&  _track;
+    const AValue<T>& _source;
+    std::vector< std::list<T> > _record;
+    std::list<T> _track;
 };
-
-
-template <typename X, typename Y>
-std::ostream& operator<<(std::ostream& os, const Track<X,Y>& record){
-    auto vx = record.getX();
-    auto vy = record.getY();
-    for(size_t i = 0; i < record.size(); ++i) os << vx.at(i) << "\t" << vy.at(i) << "\n";
-    return os;
-}
 
 class Recorder
 {
 public:
-    explicit Recorder(unsigned regularity = 0, bool started = true):
+    explicit Recorder(unsigned regularity = 0, bool started = false):
         _started(started),_regularity(regularity),_calls(0){}
 
     void start()   { _started = true; }
@@ -133,29 +117,33 @@ public:
         _started = false;
     }
 
-    bool recording() const
-    {
+    bool recording() const{
         return _started;
     }
 
     void record(unsigned addedCalls = 1){
+
         if ( this->recording() ){
-           if ( !_regularity || ( _calls % _regularity == 0) ){
+            _calls+= addedCalls;
+           if ( _regularity == 0 || ( _calls % _regularity == 0) ){
                for( auto track : _tracks )
                    track.get().record();
            }
-           _calls+= addedCalls;
         }
     }
 
-    template<class X, class Y>
-    void addTrack(Track<X,Y>& track){
+    template<class T>
+    void addTrack(Track<T>& track){
+           _tracks.push_back(track);
+    }
+    template<class T>
+    void addTrack(MultiTrack<T>& track){
            _tracks.push_back(track);
     }
 
 private:
 
-   std::vector<std::reference_wrapper<_Track>> _tracks;
+    std::vector<std::reference_wrapper<__Track>> _tracks;
 
     bool      _started;
     unsigned  _regularity;
@@ -163,8 +151,7 @@ private:
 
 };
 
-
-
-
 }
+
+
 #endif // RECORDER_H

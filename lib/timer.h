@@ -1,34 +1,35 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-#include "abstractvalues.h"
+#include "values.h"
 #include <ctime> // clock_t
 
 namespace onion{
 
 struct Timer :
-        virtual public AValue<double>
+        public AValue<double>
 {
     explicit Timer(bool startnow = false);
     virtual ~Timer() = default;
     virtual double getValue(void) const;
+    virtual void setValue(const double& v);
     void start();
-    void stop();
+
 protected:
 
-    clock_t _begin;
-    clock_t _end;
+    clock_t begin;
 };
 
 struct ResettableTimer :
-        virtual public Timer,
-        virtual public AResettableValue<double>
+        public Timer,
+        public AResettable
 {
-    ResettableTimer(bool startnow = false):
-        Timer(startnow),AResettable(false){}
+    ResettableTimer(bool startnow = false, bool locked = false):
+        Timer(startnow),AResettable(locked){}
     virtual ~ResettableTimer() = default;
 
 protected:
+
     virtual void doReset();
 };
 

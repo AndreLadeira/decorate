@@ -4,10 +4,12 @@
 #include <chrono>
 #include <iomanip> // setprecision
 #include <cassert>
+#include <clocale>
 
 #include "lib/onionmh.h"
 #include "mh/rrga.h"
 #include "lib/stddecorators.h"
+#include "lib/trackstats.h"
 
 using namespace std;
 using namespace onion;
@@ -19,12 +21,13 @@ int main(int argc, char* argv[])
 try
 {
 
-    stringstream ss;
-    ResettableTimer runtimer(false);
-    Timer totalTimer;
-    ParameterList parameters;
-    unsigned best_overall_cost;
-    tsp::path_t best_overall_path;
+    stringstream        ss;
+    ResettableTimer     runtimer;
+    ResettableTimer     exptimer;
+    Timer               totalTimer;
+    ParameterList       parameters;
+    unsigned            best_overall_cost;
+    tsp::path_t         best_overall_path;
 
     // parameters
 
@@ -55,19 +58,19 @@ try
 
     Onion< path::AbstractObjective >    objective       ( make_shared< path::Objective >( data ) );
     Onion< tsp::AcceptBest >            accept;
-    Onion< path::Updater >              updateInner;
-    Onion< path::Updater >              updateOuter;
+    Onion< path::Updater >              updateIntensification;
+    Onion< path::Updater >              updateExploration;
     Onion< path::Updater >              updateRun;
 
     // layers
 
-    exploration_loop_controller.          addLayer< LoopCallsCounter >();
+    exploration_loop_controller.        addLayer< LoopCallsCounter >();
     //exploration_loop_controller.          addLayer< LoopRecorder >();
 
-    intensification_loop_controller.          addLayer< LoopCallsCounter >();
-    //intensification_loop_controller.          addLayer< LoopRecorder >( parameters("inner_loops").as<unsigned>()/100 );
+    intensification_loop_controller.    addLayer< LoopCallsCounter >();
+    intensification_loop_controller.    addLayer< LoopRecorder >( parameters("intensifications").as<unsigned>()/100 );
 
-    repetitions_loop_controller.           addLayer< LoopCallsCounter >();
+    repetitions_loop_controller.        addLayer< LoopCallsCounter >(true);
     //repetitions_loop_controller.           addLayer< LoopRecorder >();
 
     create.             addLayer< path::CreatorCallsCounter >();
@@ -76,13 +79,18 @@ try
 
     updateRun.          addLayer< path::UpdateRecorder >();
 
+    updateExploration.  addLayer< path::UpdateRecorder >();
+
     // terminantion triggers
 
-    exploration_loop_controller.          core().addTrigger( Trigger<>("Exploration loops",       exploration_loop_controller.as<ResettableCounter>(), 2 ));// parameters("outer_loops").as<unsigned>()));
+    exploration_loop_controller.          core().addTrigger( Trigger<>("Exploration loops",       exploration_loop_controller.as<ResettableCounter>(),
+                                                                       parameters("explorations").as<unsigned>()));
     exploration_loop_controller.          core().addTrigger( Trigger<>("Objective fcn calls",     objective.as<ResettableCounter>(),  1e6));
-    intensification_loop_controller.      core().addTrigger( Trigger<>("Intensification loops",   intensification_loop_controller.as<ResettableCounter>(),  parameters("inner_loops").as<unsigned>()));
+    intensification_loop_controller.      core().addTrigger( Trigger<>("Intensification loops",   intensification_loop_controller.as<ResettableCounter>(),
+                                                                       parameters("intensifications").as<unsigned>()));
     intensification_loop_controller.      core().addTrigger( Trigger<>("Objective fcn calls",     objective.as<ResettableCounter>(),  1e6));
-    repetitions_loop_controller.          core().addTrigger( Trigger<>("Repetitions",             repetitions_loop_controller.as<ResettableCounter>(),   parameters("repetitions").as<unsigned>()));
+    repetitions_loop_controller.          core().addTrigger( Trigger<>("Repetitions",             repetitions_loop_controller.as<ResettableCounter>(),
+                                                                       parameters("repetitions").as<unsigned>()));
 
     // Tracks
     // Track<>                 bestXexplLoops      (   exploration_loop_controller.as<Counter>(),  BoundValue<unsigned>(run_cost)        );
@@ -91,6 +99,34 @@ try
 //    Track<unsigned,double>  timeXrun            (   repetitions_loop_controller.as<Counter>(),   runtimer                              );
 //    Track<>                 objCallsXrun        (   repetitions_loop_controller.as<Counter>(),   objective.as<Counter>()               );
 
+//    Track<int> trval(val);
+//    Track<double> trtime(timer);
+//    Track<int> trref(refv);
+
+//    Subject s;
+//    MultiTrack<int> mtrVal(val,s);
+
+    // values and tracks
+    unsigned exp_cost;
+    unsigned rep_cost;
+
+    MultiTrack<unsigned> mtrack_exp_cost( (onion::RefValue<unsigned>(exp_cost) ), intensification_loop_controller.core() );
+    MultiTrack<double>   mtrack_exp_time( exptimer, intensification_loop_controller.core() );
+
+    intensification_loop_controller.as<Recorder>().addTrack(mtrack_exp_cost);
+    intensification_loop_controller.as<Recorder>().addTrack(mtrack_exp_time);
+    intensification_loop_controller.as<Recorder>().start();
+
+    Track<double> track_exp_time(exptimer);
+    Track<unsigned> track_exp_cost( (onion::RefValue<unsigned>(exp_cost)) );
+    Track<unsigned> track_rep_cost( (onion::RefValue<unsigned>(rep_cost)) );
+
+    updateExploration.as<Recorder>()    .addTrack(track_exp_time);
+    updateExploration.as<Recorder>()    .addTrack(track_exp_cost);
+    updateRun.as<Recorder>()            .addTrack(track_rep_cost);
+
+    updateExploration.as<Recorder>()    .start();
+    updateRun.as<Recorder>()            .start();
     // recorders
 
     //exploration_loop_controller.as<Recorder>()    .addTrack(  bestXexplLoops  );
@@ -110,14 +146,13 @@ try
         runtimer.reset();
 
         auto rep_best_path = create();
-        auto rep_cost = objective(rep_best_path);
+        rep_cost = objective(rep_best_path);
 
         while( exploration_loop_controller() )
         {
             auto exp_best_path = create();
-            auto exp_cost = objective( exp_best_path );
-
-            intensification_loop_controller.as<LoopController>().reset();
+            exp_cost = objective( exp_best_path );
+            exptimer.reset();
 
             while( intensification_loop_controller() )
             {
@@ -125,28 +160,40 @@ try
                 auto newcost = objective( neighbor );
                 auto accepted = accept( exp_cost, newcost );
                 if ( accepted )
-                    updateInner(exp_best_path, exp_cost,
+                    updateIntensification(
+                                exp_best_path, exp_cost,
                                 neighbor.at(accepted.index()),
-                                newcost.at(accepted.index()));
+                                newcost.at(accepted.index())
+                                );
             }
-            updateOuter(rep_best_path,rep_cost,exp_best_path,exp_cost);
+            updateExploration(rep_best_path,rep_cost,exp_best_path,exp_cost);
         }
         updateRun(best_overall_path,best_overall_cost,rep_best_path,rep_cost);
     }
 
-//    auto timeStats  = Stats<unsigned,double>( timeXrun );
-//    auto bestStats  = Stats<>( bestXrun );
-//    auto objFStats  = Stats<>( objCallsXrun );
+    auto timeStats  = TrackStats<double>( track_exp_time );
+    auto costStats  = TrackStats<unsigned>( track_exp_cost );
+    auto repStats   = TrackStats<unsigned>( track_rep_cost );
+    auto stagStats  = TrackStats<unsigned>( getStagnationTrack( mtrack_exp_cost ) );
 
     cout<< endl;
-    cout<< "Total time                          : " << fixed << setprecision(2) << totalTimer.getValue() << "(s)\n";
-    cout<< "Runs/Explorations/Intensifications  : " << repetitions_loop_controller.as<Counter>().getValue() << "/"
-                                                    << repetitions_loop_controller.as<Counter>().getValue() << "/"
-                                                    << exploration_loop_controller.as<Counter>().getValue() <<endl;
-    //cout<< "Obj. fcn. calls (min/max/avg)       : " << fixed << setprecision(0) << objFStats.min() << "/" << objFStats.max() << "/" << objFStats.average() << "\n";
-    //cout<< "Run time (min/max/avg)              : " << fixed << setprecision(2) << timeStats.min() << "/" << timeStats.max() << "/" << timeStats.average() << "(s)\n";
-    //cout<< "Final result                         : " << setprecision(0) << bestStats.min() << "/" << bestStats.max() << "/" << bestStats.average() << endl;
-    cout<< "Final result                         : " << setprecision(0) << best_overall_cost << endl;
+    cout<< "File name (runs/exps./intens.)            : " << parameters("file_name").as<string>() << " (" << parameters("repetitions").as<unsigned>() << "/"
+                                                    << parameters("explorations").as<unsigned>() << "/" << parameters("intensifications").as<unsigned>() << ")\n";
+    cout<< "Total time                                : " << fixed << setprecision(2) << totalTimer.getValue() << " (s)\n";
+    cout<< "Avg. time per run                         : " << fixed << setprecision(2) << totalTimer.getValue() / parameters("repetitions").as<unsigned>() << "(s)\n";
+    cout<< "Total Runs/Explorations/Intensifications  : " << repetitions_loop_controller.as<ResettableCounter>().getValue() << "/"
+                                                    << exploration_loop_controller.as<ResettableCounter>().getAccumulated()<< "/"
+                                                    << intensification_loop_controller.as<ResettableCounter>().getAccumulated() <<endl;
+
+    cout<< "Obj. fcn. calls                           : "  << objective.as<ResettableCounter>().getAccumulated()  << "\n";
+    cout<< "Run time (min/max/avg)                    : " << fixed << setprecision(4) << timeStats.min() << "/" << timeStats.max() << "/" << timeStats.average() << " (s)\n";
+    cout<< "Final result (all exps., min/max/avg)     : " << setprecision(0) << costStats.min() << "/" << costStats.max() << "/" << costStats.average() << endl;
+    cout<< "Final result (only reps., min/max/avg)    : " << setprecision(0) << repStats.min() << "/" << repStats.max() << "/" << repStats.average() << endl;
+    cout<< "Stagnation Stats. (min/max/avg)           : " << setprecision(0) << stagStats.min() * 100 << "/" << stagStats.max() * 100 << "/" << stagStats.average() * 100 << endl;
+
+    cout<< "\nAll Curves + average curve\n\n";
+    cout << mtrack_exp_cost;
+
     cout<< endl;
 
     //assert(bestStats.min() == objective(best));

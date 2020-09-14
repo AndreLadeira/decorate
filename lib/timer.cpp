@@ -2,28 +2,24 @@
 
 using namespace onion;
 
-void onion::Timer::start()
-{
-    _begin = clock();
+void Timer::start(){
+    static bool started = false;
+    if (!started){
+        begin = clock();
+        started = true;
+    }
 }
 
-void Timer::stop()
-{
-    _end = clock();
-}
-
-onion::Timer::Timer(bool startnow):_begin(0),_end(0)
-{
+Timer::Timer(bool startnow){
     if ( startnow ) start();
 }
 
-double onion::Timer::getValue() const
-{
-    if ( _begin != 0 ) return static_cast<double>(clock() - _begin) / CLOCKS_PER_SEC;
-    else return double(0);
+double Timer::getValue() const {
+    return static_cast<double>(clock() - begin) / CLOCKS_PER_SEC;
 }
 
-void onion::ResettableTimer::doReset()
-{
-    start();
+void Timer::setValue(const double& v){}
+
+void ResettableTimer::doReset(){
+    begin = clock();
 }
