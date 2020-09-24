@@ -14,6 +14,10 @@ bool LoopCallsCounter::operator()()
 bool LoopRecorder::operator()()
 {
     auto isrunning = this->_next->operator()();
-    if ( isrunning ) this->record();
+    if ( isrunning )
+        Recorder::record();
+    else
+        Recorder::restart();
+    //this->record();
     return isrunning;
 }

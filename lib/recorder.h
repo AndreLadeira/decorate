@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <list>
+#include <ostream>
 #include "values.h"
 #include "observer.h"
 
@@ -10,10 +11,14 @@ namespace onion {
 
 class __Track{
 public:
-    virtual ~__Track() = default;
-    virtual void record() = 0;
-    virtual void clear() = 0;
-    virtual size_t size() const = 0;
+    __Track(std::string name);
+    virtual         ~__Track() = default;
+    virtual void    record() = 0;
+    virtual void    clear() = 0;
+    virtual size_t  size() const = 0;
+    std::string getName() const;
+private:
+    std::string _name;
 };
 
 template<typename T>
@@ -23,8 +28,8 @@ template<typename T>
 class Track : public __Track
 {
 public:
-    explicit Track(const AValue<T>& source):
-        _source(source){}
+    explicit Track(std::string name, const AValue<T>& source):
+        __Track(name),_source(source){}
     virtual ~Track() = default;
 
     virtual void record(){
@@ -44,7 +49,6 @@ public:
 private:
 
     friend struct TrackStats<T>;
-
     const AValue<T>& _source;
     std::list<T> _record;
 
@@ -56,8 +60,8 @@ class MultiTrack :
         public Observer
 {
 public:
-    explicit MultiTrack(const AValue<T>& source, Subject& trigger):
-        _source(source){
+    explicit MultiTrack(std::string name,const AValue<T>& source, Subject& trigger):
+        __Track(name),_source(source){
         trigger.add(*this);
     }
     virtual ~MultiTrack() = default;
@@ -68,10 +72,15 @@ public:
     virtual void clear(){
         _record.clear();
         _track.clear();
-
     }
     virtual size_t size() const {
-            return _record.size();
+        if (_record.size() )
+            return _record.at(0).size();
+        else
+            return 0;
+    }
+    size_t trackCount() const{
+       return _record.size();
     }
 
     virtual std::vector<T> getTrack(unsigned track) const {
@@ -107,8 +116,6 @@ public:
 
     void restart()  {
         _calls      = 0;
-        _started    = true;
-        for( auto track : _tracks ) track.get().clear();
     }
 
     void clear(){
@@ -124,11 +131,15 @@ public:
     void record(unsigned addedCalls = 1){
 
         if ( this->recording() ){
-            _calls+= addedCalls;
-           if ( _regularity == 0 || ( _calls % _regularity == 0) ){
+
+           // regularity == 0: record every frame
+           // _calls == 0: always record the 1st frame
+           // _calls % _regularity == 0 record every _regularity frames
+           if ( _regularity == 0 || _calls == 0 || ( (_calls+1) % (_regularity) == 0) ){
                for( auto track : _tracks )
                    track.get().record();
            }
+           _calls+= addedCalls;
         }
     }
 

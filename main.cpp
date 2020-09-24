@@ -9,7 +9,7 @@
 #include "lib/onionmh.h"
 #include "mh/rrga.h"
 #include "lib/stddecorators.h"
-#include "lib/trackstats.h"
+#include "lib/trackutil.h"
 
 using namespace std;
 using namespace onion;
@@ -110,16 +110,18 @@ try
     unsigned exp_cost;
     unsigned rep_cost;
 
-    MultiTrack<unsigned> mtrack_exp_cost( (onion::RefValue<unsigned>(exp_cost) ), intensification_loop_controller.core() );
-    MultiTrack<double>   mtrack_exp_time( exptimer, intensification_loop_controller.core() );
+    MultiTrack<unsigned> mtrack_exp_cost( "exp. cost", (onion::RefValue<unsigned>(exp_cost) ), intensification_loop_controller.core() );
+    MultiTrack<double>   mtrack_exp_time( "exp. time", exptimer, intensification_loop_controller.core() );
+    MultiTrack<unsigned> mtrack_obj_fcn_calls( "obj. fcn. calls", objective.as<ResettableCounter>(), intensification_loop_controller.core() );
 
     intensification_loop_controller.as<Recorder>().addTrack(mtrack_exp_cost);
     intensification_loop_controller.as<Recorder>().addTrack(mtrack_exp_time);
+    intensification_loop_controller.as<Recorder>().addTrack(mtrack_obj_fcn_calls);
     intensification_loop_controller.as<Recorder>().start();
 
-    Track<double> track_exp_time(exptimer);
-    Track<unsigned> track_exp_cost( (onion::RefValue<unsigned>(exp_cost)) );
-    Track<unsigned> track_rep_cost( (onion::RefValue<unsigned>(rep_cost)) );
+    Track<double> track_exp_time("exp. time", exptimer);
+    Track<unsigned> track_exp_cost( "exp. cost", (onion::RefValue<unsigned>(exp_cost)) );
+    Track<unsigned> track_rep_cost( "rep. cost", (onion::RefValue<unsigned>(rep_cost)) );
 
     updateExploration.as<Recorder>()    .addTrack(track_exp_time);
     updateExploration.as<Recorder>()    .addTrack(track_exp_cost);
@@ -189,10 +191,25 @@ try
     cout<< "Run time (min/max/avg)                    : " << fixed << setprecision(4) << timeStats.min() << "/" << timeStats.max() << "/" << timeStats.average() << " (s)\n";
     cout<< "Final result (all exps., min/max/avg)     : " << setprecision(0) << costStats.min() << "/" << costStats.max() << "/" << costStats.average() << endl;
     cout<< "Final result (only reps., min/max/avg)    : " << setprecision(0) << repStats.min() << "/" << repStats.max() << "/" << repStats.average() << endl;
-    cout<< "Stagnation Stats. (min/max/avg)           : " << setprecision(0) << stagStats.min() * 100 << "/" << stagStats.max() * 100 << "/" << stagStats.average() * 100 << endl;
 
-    cout<< "\nAll Curves + average curve\n\n";
-    cout << mtrack_exp_cost;
+    unsigned multp = parameters("intensifications").as<unsigned>() / 100;
+
+    cout<< "Stagnation Stats. (min/max/avg)           : " << setprecision(0) << stagStats.min() * multp << "/" << stagStats.max() * multp << "/" << stagStats.average() * multp << endl;
+
+//    cout<< "\nmin/max/average curves\n\n";
+//    cout << mtrack_exp_cost;
+
+//    cout<< "\nAverage results x average obj fcn calls\n\n";
+
+//    printAverages<unsigned,unsigned>(mtrack_obj_fcn_calls,mtrack_exp_cost);
+
+    TrackPrinter printer;
+    std::vector<unsigned> exps(mtrack_obj_fcn_calls.size());
+    std::iota(exps.begin(),exps.end(),0);
+    for(auto& v : exps ) v *= multp;
+
+    printer << TrackPrinter::track<unsigned>("exploration",exps) << mtrack_obj_fcn_calls << mtrack_exp_cost;
+    printer.print(cout);
 
     cout<< endl;
 

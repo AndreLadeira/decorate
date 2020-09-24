@@ -16,7 +16,8 @@ SOURCES += \
     lib/random.cpp \
     lib/abstractvalues.cpp \
     lib/timer.cpp \
-    lib/values.cpp
+    lib/values.cpp \
+    lib/recorder.cpp
 
 HEADERS += \
     lib/algorithm.h \
@@ -45,7 +46,7 @@ HEADERS += \
     lib/timer.h \
     lib/values.h \
     lib/observer.h \
-    lib/trackstats.h
+    lib/trackutil.h
 
 CONFIG(debug, debug|release) {
     DEFINES += "__DEBUG__"
