@@ -36,12 +36,14 @@ template< typename solution_t,typename cost_t = unsigned>
 using Updater = Updater<solution_t,cost_t,Compare<cost_t>::greater>;
 
 }
+
 namespace min{
 
 template< typename solution_t,typename cost_t = unsigned>
 using Updater = Updater<solution_t,cost_t,Compare<cost_t>::less>;
 
 }
+
 }
 
 #endif // UPDATE_H

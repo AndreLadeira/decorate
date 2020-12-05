@@ -73,12 +73,17 @@ public:
         _record.clear();
         _track.clear();
     }
+    // returns the size of the smallest record
     virtual size_t size() const {
-        if (_record.size() )
-            return _record.at(0).size();
-        else
-            return 0;
+        if (_record.size() ){
+            auto sz = std::numeric_limits<size_t>::max();
+            for (auto & rec: _record )
+               if( rec.size() < sz ) sz = rec.size();
+            return sz;
+        }
+        return 0;
     }
+
     size_t trackCount() const{
        return _record.size();
     }

@@ -11,9 +11,6 @@ template <class CoreType>
 class Onion;
 
 template <class CoreType>
-class Onion;
-
-template <class CoreType>
 class OnionLayer{
 protected:
     friend class Onion<CoreType>;
@@ -34,10 +31,10 @@ template <class CoreType,class T> auto InvokeFunctor(const CoreType& _ptr, const
 -> decltype ( static_cast<CoreType>(nullptr)->operator()(t) )
 {return _ptr->operator()(t);}
 
-template <class CoreType,class T, class U, class... Args >
-auto InvokeFunctor(const CoreType& _ptr, const T &t, const U &u, const Args&...)
--> decltype ( static_cast<CoreType>(nullptr)->operator()(t,u) )
-{return _ptr->operator()(t,u);}
+//template <class CoreType,class T, class U, class... Args >
+//auto InvokeFunctor(const CoreType& _ptr, const T &t, const U &u, const Args&...)
+//-> decltype ( static_cast<CoreType>(nullptr)->operator()(t,u) )
+//{return _ptr->operator()(t,u);}
 
 template <class CoreType,class T, class U, class... Args >
 auto InvokeFunctor(const CoreType& _ptr, T& t, U& u, const Args&...)
@@ -103,10 +100,16 @@ public:
 
 private:
 
+    using Layer = OnionLayer<CoreType>;
+
     template<class C> C& as(CoreType* ptr) const {
         C* cptr = dynamic_cast<C*>(ptr);
         if (cptr) return *cptr;
-        OnionLayer<CoreType>* lptr = dynamic_cast< OnionLayer<CoreType>* >(ptr);
+
+        // here, the pointer can point to a layer or to the core
+        // if points to a layer, keep recurring
+        Layer* lptr = dynamic_cast< OnionLayer<CoreType>* >(ptr);
+
         if (lptr) return as<C>( lptr->_next.get() );
         else throw std::runtime_error("Onion::as: bad cast" );
     }

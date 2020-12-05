@@ -10,31 +10,31 @@
 
 namespace onion{
 
-class __Trigger : public onion::LabeledObject
+class __StopCondition : public onion::LabeledObject
 {
 public:
-    explicit __Trigger(const std::string& label);
-    virtual ~__Trigger() = default;
-    virtual bool activated() const = 0;
+    explicit __StopCondition(const std::string& label);
+    virtual ~__StopCondition() = default;
+    virtual bool satisfied() const = 0;
     virtual void reset() = 0;
 };
 
 
 template <typename T = unsigned>
-class Trigger : public __Trigger
+class StopCondition : public __StopCondition
 {
 public:
 
-    Trigger(std::string label, ResettableValue<T>& v, T limit, bool external = false, Compare<T> c = Compare<T>::greater_or_equal ):
-        __Trigger(label),_value(v),_limit(limit),_compare(c),_external(external){}
-    Trigger(std::string label, ResettableValue<T>&& v, T limit, bool external = false, Compare<T> c = Compare<T>::greater_or_equal ):
-        __Trigger(label),_value(v),_limit(limit),_compare(c),_external(external){}
+    StopCondition(std::string label, ResettableValue<T>& v, T limit, Compare<T> c = Compare<T>::greater_or_equal ):
+        __StopCondition(label),_value(v),_limit(limit),_compare(c){}
+    StopCondition(std::string label, ResettableValue<T>&& v, T limit, Compare<T> c = Compare<T>::greater_or_equal ):
+        __StopCondition(label),_value(v),_limit(limit),_compare(c){}
 
-    virtual bool activated() const{
+    virtual bool satisfied() const{
         return _compare( _value.getValue(), _limit );
     }
     virtual void reset(){
-        if (!_external) _value.reset();
+        _value.reset();
     }
 
 
@@ -43,11 +43,7 @@ private:
     ResettableValue<T>& _value;
     const T _limit;
     Compare<T> _compare;
-    bool _external;
-
 };
-
-
 
 class LoopController :
         public NonCopyable,
@@ -55,27 +51,36 @@ class LoopController :
 {
 public:
 
-    LoopController():_loopCount(0){}
+    LoopController(const std::string label = "LoopController", unsigned maxLoops = 0);
     virtual ~LoopController() = default;
     virtual bool operator()();
 
-    template<typename T> void addTrigger( const Trigger<T>& t){
-        _triggers.push_back( std::make_shared<Trigger<T>>(t) );
+    enum class SC_OWNER { THIS, OTHER };
+
+    template<typename T> void addStopCondition(
+            const StopCondition<T>& t, SC_OWNER owner = SC_OWNER::THIS){
+        _stopConditions.push_back( {owner,std::make_shared<StopCondition<T>>(t)} );
     }
 
     void reset();
 
-    std::string getTrigger() const;
+    std::string getStopCondition() const;
 
-    const unsigned& getLoopCount(){
-        return _loopCount;
+    unsigned getLoopCount(){
+        return _loopCount.getValue();
     }
 
 private:
-    using trigger_ptr_t = std::shared_ptr<__Trigger>;
-    std::vector<trigger_ptr_t> _triggers;
-    std::string _triggerID;
-    unsigned _loopCount;
+    using stop_condition_ptr_t = std::shared_ptr<__StopCondition>;
+
+    struct stop_condition_pair_t{
+        SC_OWNER owner;
+        stop_condition_ptr_t ptr;
+    };
+
+    std::vector<stop_condition_pair_t>  _stopConditions;
+    std::string                         _stopConditionLabel;
+    ResettableValue<unsigned>           _loopCount;
 };
 
 

@@ -20,10 +20,7 @@ using namespace tsp;
 int main(int argc, char* argv[])
 try
 {
-
     stringstream        ss;
-    ResettableTimer     runtimer;
-    ResettableTimer     exptimer;
     Timer               totalTimer;
     ParameterList       parameters;
     unsigned            best_overall_cost;
@@ -44,34 +41,35 @@ try
     auto data = cops::tsp::tsp_tsplibDataLoader()(file);
     file.close();
 
-    // onions
+    // Loop Controller Onions
 
-    Onion<LoopController>               exploration_loop_controller;
-    Onion<LoopController>               intensification_loop_controller;
-    Onion<LoopController>               repetitions_loop_controller;
+    Onion< LoopController > exploration_loop_controller     ( make_shared<LoopController>("Exploration Loop",       parameters("explorations").as<unsigned>() ) );
+    Onion< LoopController > intensification_loop_controller ( make_shared<LoopController>("Intensification Loop",   parameters("intensifications").as<unsigned>() ) );
+    Onion< LoopController > repetitions_loop_controller     ( make_shared<LoopController>("Repetitions Loop",       parameters("repetitions").as<unsigned>() ) );
+
+    // algorithm onions
+
     Onion< path::Creator >              create          ( make_shared<path::CreateRandom>( data.size() ) );
 
     Onion< path::Neighbor >             neighborhood    ( make_shared<path::MaskReinsert>() );
+    //Onion< path::Neighbor >             neighborhood    ( make_shared< path::_2optSingle>() );
+    //Onion< path::Neighbor >             neighborhood    ( make_shared< path::_2optAll>() );
 
-    //Onion< path::Neighbor >           neighborhood    ( make_shared< path::_2optSingle>() );
-    //Onion< path::Neighbor >           neighborhood    ( make_shared< path::_2optAll>() );
-
-    Onion< path::AbstractObjective >    objective       ( make_shared< path::Objective >( data ) );
-    Onion< tsp::AcceptBest >            accept;
+    Onion< path::Objective >            objective       ( make_shared< path::tspObjective >( data ) );
+    Onion< tsp::Accept1st >             accept;
     Onion< path::Updater >              updateIntensification;
     Onion< path::Updater >              updateExploration;
     Onion< path::Updater >              updateRun;
 
-    // layers
+    // Decorator layers
 
-    exploration_loop_controller.        addLayer< LoopCallsCounter >();
-    //exploration_loop_controller.          addLayer< LoopRecorder >();
-
-    intensification_loop_controller.    addLayer< LoopCallsCounter >();
+    exploration_loop_controller.        addLayer< LoopTimer >();
     intensification_loop_controller.    addLayer< LoopRecorder >( parameters("intensifications").as<unsigned>()/100 );
+    intensification_loop_controller.    addLayer< LoopTimer >();
 
-    repetitions_loop_controller.        addLayer< LoopCallsCounter >(true);
-    //repetitions_loop_controller.           addLayer< LoopRecorder >();
+    repetitions_loop_controller.        addLayer< LoopCounter >();
+    exploration_loop_controller.        addLayer< LoopCounter >();
+    intensification_loop_controller.    addLayer< LoopCounter >();
 
     create.             addLayer< path::CreatorCallsCounter >();
 
@@ -81,16 +79,13 @@ try
 
     updateExploration.  addLayer< path::UpdateRecorder >();
 
-    // terminantion triggers
+    // stop conditions
+    auto stop = StopCondition<>("Objective fcn calls",objective.as<ResettableCounter>(),1e6);
 
-    exploration_loop_controller.          core().addTrigger( Trigger<>("Exploration loops",       exploration_loop_controller.as<ResettableCounter>(),
-                                                                       parameters("explorations").as<unsigned>()));
-    exploration_loop_controller.          core().addTrigger( Trigger<>("Objective fcn calls",     objective.as<ResettableCounter>(),  1e6));
-    intensification_loop_controller.      core().addTrigger( Trigger<>("Intensification loops",   intensification_loop_controller.as<ResettableCounter>(),
-                                                                       parameters("intensifications").as<unsigned>()));
-    intensification_loop_controller.      core().addTrigger( Trigger<>("Objective fcn calls",     objective.as<ResettableCounter>(),  1e6));
-    repetitions_loop_controller.          core().addTrigger( Trigger<>("Repetitions",             repetitions_loop_controller.as<ResettableCounter>(),
-                                                                       parameters("repetitions").as<unsigned>()));
+    repetitions_loop_controller     .core().addStopCondition( stop, LoopController::SC_OWNER::OTHER );
+    exploration_loop_controller     .core().addStopCondition( stop, LoopController::SC_OWNER::OTHER );
+    intensification_loop_controller .core().addStopCondition( stop, LoopController::SC_OWNER::OTHER );
+
 
     // Tracks
     // Track<>                 bestXexplLoops      (   exploration_loop_controller.as<Counter>(),  BoundValue<unsigned>(run_cost)        );
@@ -110,18 +105,18 @@ try
     unsigned exp_cost;
     unsigned rep_cost;
 
-    MultiTrack<unsigned> mtrack_exp_cost( "exp. cost", (onion::RefValue<unsigned>(exp_cost) ), intensification_loop_controller.core() );
-    MultiTrack<double>   mtrack_exp_time( "exp. time", exptimer, intensification_loop_controller.core() );
-    MultiTrack<unsigned> mtrack_obj_fcn_calls( "obj. fcn. calls", objective.as<ResettableCounter>(), intensification_loop_controller.core() );
+    MultiTrack<unsigned> mtrack_exp_cost        ("exp. cost",        (onion::RefValue<unsigned>(exp_cost) ),        intensification_loop_controller.core() );
+    MultiTrack<double>   mtrack_exp_time        ("exp. time",        intensification_loop_controller.as<Timer>(),   intensification_loop_controller.core() );
+    MultiTrack<unsigned> mtrack_obj_fcn_calls   ("obj. fcn. calls",  objective.as<ResettableCounter>(),             intensification_loop_controller.core() );
 
     intensification_loop_controller.as<Recorder>().addTrack(mtrack_exp_cost);
     intensification_loop_controller.as<Recorder>().addTrack(mtrack_exp_time);
     intensification_loop_controller.as<Recorder>().addTrack(mtrack_obj_fcn_calls);
     intensification_loop_controller.as<Recorder>().start();
 
-    Track<double> track_exp_time("exp. time", exptimer);
-    Track<unsigned> track_exp_cost( "exp. cost", (onion::RefValue<unsigned>(exp_cost)) );
-    Track<unsigned> track_rep_cost( "rep. cost", (onion::RefValue<unsigned>(rep_cost)) );
+    Track<double> track_exp_time    ("exp. time", exploration_loop_controller.as<Timer>());
+    Track<unsigned> track_exp_cost  ("exp. cost", onion::RefValue<unsigned>(exp_cost)    );
+    Track<unsigned> track_rep_cost  ("rep. cost", onion::RefValue<unsigned>(rep_cost)    );
 
     updateExploration.as<Recorder>()    .addTrack(track_exp_time);
     updateExploration.as<Recorder>()    .addTrack(track_exp_cost);
@@ -142,21 +137,19 @@ try
     best_overall_cost = objective(best_overall_path);
     totalTimer.start();
 
-    while( repetitions_loop_controller() )
+    while( repetitions_loop_controller() ) // SEE: OUT (TOTAL TIMER, TOTAL OBJCALLS), SET: SELF
     {
         onion::reset_random_engine();
-        runtimer.reset();
 
         auto rep_best_path = create();
         rep_cost = objective(rep_best_path);
 
-        while( exploration_loop_controller() )
+        while( exploration_loop_controller() )  // SEE: OUT, SET: REP (TIMER, OBJ CALLS), SELF
         {
             auto exp_best_path = create();
             exp_cost = objective( exp_best_path );
-            exptimer.reset();
 
-            while( intensification_loop_controller() )
+            while( intensification_loop_controller() ) // SEE: OUT, REP. SET: EXP (STAG, OBJ CALLS), SELF
             {
                 auto neighbor = neighborhood(exp_best_path);
                 auto newcost = objective( neighbor );
@@ -180,17 +173,20 @@ try
 
     cout<< endl;
     cout<< "File name (runs/exps./intens.)            : " << parameters("file_name").as<string>() << " (" << parameters("repetitions").as<unsigned>() << "/"
-                                                    << parameters("explorations").as<unsigned>() << "/" << parameters("intensifications").as<unsigned>() << ")\n";
+                                                          << parameters("explorations").as<unsigned>() << "/" << parameters("intensifications").as<unsigned>() << ")\n";
+    cout<< "Stop Condition (run/exp./inten.)          : " << repetitions_loop_controller.core().getStopCondition() << " / "
+                                                          << exploration_loop_controller.core().getStopCondition() << " / "
+                                                          << intensification_loop_controller.core().getStopCondition() << endl;
     cout<< "Total time                                : " << fixed << setprecision(2) << totalTimer.getValue() << " (s)\n";
-    cout<< "Avg. time per run                         : " << fixed << setprecision(2) << totalTimer.getValue() / parameters("repetitions").as<unsigned>() << "(s)\n";
-    cout<< "Total Runs/Explorations/Intensifications  : " << repetitions_loop_controller.as<ResettableCounter>().getValue() << "/"
-                                                    << exploration_loop_controller.as<ResettableCounter>().getAccumulated()<< "/"
-                                                    << intensification_loop_controller.as<ResettableCounter>().getAccumulated() <<endl;
+    cout<< "Avg. time per run                         : " << fixed << setprecision(2) << totalTimer.getValue() / parameters("repetitions").as<unsigned>() << " (s)\n";
+    cout<< "Total Runs/Explorations/Intensifications  : " << repetitions_loop_controller.as<Counter>().getValue() << " / "
+                                                          << exploration_loop_controller.as<Counter>().getValue()<< " / "
+                                                          << intensification_loop_controller.as<Counter>().getValue() <<endl;
 
-    cout<< "Obj. fcn. calls                           : "  << objective.as<ResettableCounter>().getAccumulated()  << "\n";
-    cout<< "Run time (min/max/avg)                    : " << fixed << setprecision(4) << timeStats.min() << "/" << timeStats.max() << "/" << timeStats.average() << " (s)\n";
-    cout<< "Final result (all exps., min/max/avg)     : " << setprecision(0) << costStats.min() << "/" << costStats.max() << "/" << costStats.average() << endl;
-    cout<< "Final result (only reps., min/max/avg)    : " << setprecision(0) << repStats.min() << "/" << repStats.max() << "/" << repStats.average() << endl;
+    cout<< "Obj. fcn. calls                           : "  << objective.as<Counter>().getValue()  << "\n";
+    cout<< "Run time (min/max/avg)                    : " << fixed << setprecision(4) << timeStats.min() << " / " << timeStats.max() << " / " << timeStats.average() << " (s)\n";
+    cout<< "Final result (all exps., min/max/avg)     : " << setprecision(0) << costStats.min() << " / " << costStats.max() << " / " << costStats.average() << endl;
+    cout<< "Final result (only reps., min/max/avg)    : " << setprecision(0) << repStats.min() << " / " << repStats.max() << " / " << repStats.average() << endl;
 
     unsigned multp = parameters("intensifications").as<unsigned>() / 100;
 
@@ -208,7 +204,8 @@ try
     std::iota(exps.begin(),exps.end(),0);
     for(auto& v : exps ) v *= multp;
 
-    printer << TrackPrinter::track<unsigned>("exploration",exps) << mtrack_obj_fcn_calls << mtrack_exp_cost;
+    printer << TrackPrinter::track<unsigned>("exploration",exps) << mtrack_exp_time
+            << mtrack_exp_cost << mtrack_obj_fcn_calls;
     printer.print(cout);
 
     cout<< endl;

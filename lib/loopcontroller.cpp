@@ -3,31 +3,37 @@
 using namespace onion;
 using namespace std;
 
-__Trigger::__Trigger(const std::string &label):LabeledObject(label){}
+__StopCondition::__StopCondition(const std::string &label):LabeledObject(label){}
+
+LoopController::LoopController(const string label, unsigned maxLoops)
+    :_loopCount(0){
+    if (maxLoops != 0)
+        this->addStopCondition( StopCondition<>(label, this->_loopCount, maxLoops) );
+}
 
 bool LoopController::operator()() {
 
-    _loopCount++;
-
-    for( auto trigger : _triggers )
-        if (trigger->activated()) {
-            _triggerID = trigger->getLabel();
+    // stop conditions stop
+    for( auto stopCondition : _stopConditions )
+        if (stopCondition.ptr->satisfied()) {
+            _stopConditionLabel = stopCondition.ptr->getLabel();
             this->reset();
             this->notify();
             return false;
         }
+
+    this->_loopCount++;
+
     return true;
 }
 
 void LoopController::reset()
 {
-    _loopCount = 0;
-
-    for( auto trigger : _triggers )
-        trigger->reset();
+    for( auto sc : _stopConditions )
+        if ( sc.owner == SC_OWNER::THIS ) sc.ptr->reset();
 }
 
-string LoopController::getTrigger() const
+string LoopController::getStopCondition() const
 {
-    return _triggerID;
+    return _stopConditionLabel;
 }

@@ -8,19 +8,32 @@
 #include "update.h"
 #include "objective.h"
 #include "recorder.h"
+#include "timer.h"
 
 namespace onion{
 
-class LoopCallsCounter :
+class LoopTimer :
         public LoopController,
-        public ResettableCounter,
+        public Timer,
         public OnionLayer<LoopController>
 {
 public:
-    LoopCallsCounter(OnionLayer<LoopController>::core_ptr_t next, bool locked = false):
-        ResettableCounter(0,locked), OnionLayer<LoopController>(next){}
+    LoopTimer(OnionLayer<LoopController>::core_ptr_t next):
+        OnionLayer<LoopController>(next){}
     virtual bool operator()();
 };
+
+class LoopCounter :
+        public LoopController,
+        public Counter,
+        public OnionLayer<LoopController>
+{
+public:
+    LoopCounter(OnionLayer<LoopController>::core_ptr_t next):
+        OnionLayer<LoopController>(next){}
+    virtual bool operator()();
+};
+
 
 class LoopRecorder :
         public LoopController,
@@ -41,8 +54,8 @@ class CreatorCallsCounter:
 {
 public:
 
-    CreatorCallsCounter( typename OnionLayer<Creator<solution_t>>::core_ptr_t next, bool locked = false):
-        ResettableCounter(0,locked),OnionLayer<Creator<solution_t>>(next){}
+    CreatorCallsCounter( typename OnionLayer<Creator<solution_t>>::core_ptr_t next):
+        OnionLayer<Creator<solution_t>>(next){}
 
     virtual solution_t operator()(){
         this->count();
@@ -62,8 +75,8 @@ class UpdateStagnationCounter :
 public:
     using OnionLayerBase = OnionLayer<Updater<solution_t,cost_t,c>>;
 
-    UpdateStagnationCounter(typename OnionLayerBase::core_ptr_t next, bool locked = false):
-        ResettableCounter(0,locked),OnionLayerBase(next){}
+    UpdateStagnationCounter(typename OnionLayerBase::core_ptr_t next):
+        ResettableCounter(0),OnionLayerBase(next){}
 
     virtual bool operator()(solution_t& bestSoFar,
                         cost_t& bsfCost,
@@ -141,8 +154,7 @@ class ObjectiveCallsCounter :
 public:
     using OnionLayer = OnionLayer<Objective<solution_t,problem_data_t, cost_t>>;
 
-    ObjectiveCallsCounter(typename OnionLayer::core_ptr_t next, bool locked = false):
-        ResettableCounter(0,locked),OnionLayer(next){}
+    ObjectiveCallsCounter(typename OnionLayer::core_ptr_t next): OnionLayer(next){}
 
     virtual cost_t operator()(const solution_t& s) {
         this->count();

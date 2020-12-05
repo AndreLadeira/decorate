@@ -39,13 +39,13 @@ private:
     size_t _size;
 };
 
-using AbstractObjective = onion::Objective<path_t,tsp_problem_data_t>;
+using Objective = onion::Objective<path_t,tsp_problem_data_t>;
 
-class Objective : public AbstractObjective{
+class tspObjective : public Objective{
 public:
 
-    Objective(const tsp_problem_data_t& d);
-    virtual AbstractObjective::cost_type operator()(const path_t&);
+    tspObjective(const tsp_problem_data_t& d);
+    virtual Objective::cost_type operator()(const path_t&);
 };
 
 std::ostream& operator<<(std::ostream &os, const path_t &path);
@@ -83,6 +83,7 @@ using ObjectiveRecorder = ObjectiveRecorder<tsp::path_t, tsp::tsp_problem_data_t
 using UpdateRecorder = min::UpdateRecorder<tsp::path_t>;
 
 }
+
 namespace bitmatrix{
 
 class CreateRandom : public onion::Creator< bitmatrix_t >

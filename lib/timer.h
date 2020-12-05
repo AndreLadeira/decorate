@@ -7,32 +7,24 @@
 namespace onion{
 
 struct Timer :
-        public AValue<double>
+        public AValue<double>,
+        public AResettable
 {
-    explicit Timer(bool startnow = false);
+    explicit Timer();
     virtual ~Timer() = default;
     virtual double getValue(void) const;
     virtual void setValue(const double& v);
     void start();
+    void stop();
+    virtual void reset();
 
 protected:
 
-    clock_t begin;
+    bool    _started;
+    clock_t _begin;
+    clock_t _end;
+
 };
-
-struct ResettableTimer :
-        public Timer,
-        public AResettable
-{
-    ResettableTimer(bool startnow = false, bool locked = false):
-        Timer(startnow),AResettable(locked){}
-    virtual ~ResettableTimer() = default;
-
-protected:
-
-    virtual void doReset();
-};
-
 
 }
 

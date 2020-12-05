@@ -2,22 +2,39 @@
 
 using namespace onion;
 
-bool LoopCallsCounter::operator()()
+bool LoopTimer::operator()()
 {
-    auto isrunning = this->_next->operator()();
-    if ( isrunning ) {
-        ResettableCounter::count();
+    static bool started     = false;
+    auto        isrunning   = this->_next->operator()();
+
+    if (isrunning){
+        if (!started) {
+            this->start();
+            started = true;
+        }
     }
+    else{
+        if (started) {
+            this->stop(); started = false;
+        }
+    }
+
     return isrunning;
 }
 
 bool LoopRecorder::operator()()
 {
+    Recorder::record();
+
+    auto running = this->_next->operator()();
+    if ( !running ) Recorder::restart();
+
+    return running;
+}
+
+bool LoopCounter::operator()()
+{
     auto isrunning = this->_next->operator()();
-    if ( isrunning )
-        Recorder::record();
-    else
-        Recorder::restart();
-    //this->record();
+    if ( isrunning ) Counter::count();
     return isrunning;
 }

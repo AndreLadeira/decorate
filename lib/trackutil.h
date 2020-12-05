@@ -4,6 +4,7 @@
 #include <numeric> // accumulate
 #include <cmath>   // sqrt
 #include <iostream>
+#include <iomanip> // setprecision
 #include <memory>
 #include "recorder.h"
 
@@ -240,6 +241,7 @@ struct TrackPrinter{
     }
 
     void print(std::ostream& os) const {
+        os << std::setprecision(3);
         unsigned maxSz = std::numeric_limits<unsigned>::min();
         for(auto t : _tracks){
             if ( t->getSize() > maxSz) maxSz = t->getSize();

@@ -17,32 +17,23 @@ struct AValue{
 
 struct AResettable
 {
-    AResettable(bool locked = false);
-    virtual ~AResettable();
-    virtual void reset(){
-        if (!_locked) this->doReset();
-    }
-    virtual void hardReset(){
-        this->doReset();
-    }
-
-protected:
-
-    virtual void doReset() = 0;
-
-private:
-
-    bool _locked;
+    virtual ~AResettable() = default;
+    virtual void reset() = 0;
 };
 
 template<typename T>
-struct Value:
-        public AValue<T>{
+struct Value: public AValue<T>
+{
 
     explicit Value(T v0 = T(0)):_v(v0){}
     virtual ~Value() = default;
     virtual T getValue() const { return _v;}
     virtual void setValue(const T& v) {_v = v;}
+
+    Value<T>& operator++(int){ _v++; return *this;}
+    Value<T>& operator--(int){ _v--; return *this;}
+    Value<T>& operator++(){ _v++; return *this;}
+    Value<T>& operator--(){ _v--; return *this;}
 
 protected:
 
@@ -52,15 +43,15 @@ protected:
 
 template<typename T>
 struct ResettableValue :
-        public Value<T>,
+        virtual public Value<T>,
         public AResettable
 {
-    explicit ResettableValue(T v = T(0), bool locked = false):
-        Value<T>(v),AResettable(locked),_v0(v){}
+    explicit ResettableValue(T v = T(0)):
+        Value<T>(v),_v0(v){}
 
     virtual ~ResettableValue() = default;
 
-    virtual void doReset(){
+    virtual void reset(){
            Value<T>::_v = _v0;
     }
 
@@ -90,11 +81,11 @@ protected:
 
 struct ACounter{
     virtual void count(unsigned amount) = 0;
-    virtual ~ACounter();
+    virtual ~ACounter() = default;
 };
 
 struct Counter :
-        public Value<unsigned>,
+        virtual public Value<unsigned>,
         public ACounter
 {
     explicit Counter(unsigned start = 0);
@@ -104,19 +95,14 @@ struct Counter :
 };
 
 struct ResettableCounter :
-        public ResettableValue<unsigned>,
-        public ACounter{
+        virtual public ResettableValue<unsigned>,
+        virtual public Counter{
 
-    explicit ResettableCounter(unsigned start = 0, bool locked = false):
-        ResettableValue<unsigned>(start,locked),_accumulated(0){}
+    explicit ResettableCounter(unsigned start = 0);
     virtual ~ResettableCounter() = default;
-    void count(unsigned amount = 1);
-    unsigned getAccumulated();
-private:
-    unsigned _accumulated;
 };
 
-}
+} // namespace onion
 
 
 #endif // VALUES_H

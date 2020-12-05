@@ -16,7 +16,7 @@ public:
 
     explicit Parameter(std::string s = ""):_value(s){}
 
-    template< typename T> T as(void) const {
+    template<typename T> T as(void) const {
         std::stringstream ss(_value);
         T retval;
         ss >> retval;

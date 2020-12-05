@@ -215,11 +215,11 @@ _2optSingle::_2optSingle(unsigned length):_length(length){}
 std::vector<path_t> _2optSingle::operator()(const path_t &path)
 {
 
-    const unsigned sz   = static_cast<unsigned>(path.size());
-    auto length         = _length;
-    if (!length) length = onion::rand_between(2,sz-2);
-    auto start          = onion::rand_between(1,sz-length-1);
-    auto newpath        = _2optSwap(path, start, length);
+    const unsigned sz       = static_cast<unsigned>(path.size());
+    auto length             = _length;
+    if (length < 2) length  = onion::rand_between(2,sz-2);
+    auto start              = onion::rand_between(1,sz-length-1);
+    auto newpath            = _2optSwap(path, start, length);
 
     return std::vector<path_t>(1,newpath);
 }
@@ -228,9 +228,9 @@ _2optAll::_2optAll(unsigned length):_length(length){}
 
 std::vector<path_t> _2optAll::operator()(const path_t &path)
 {
-    const unsigned sz   = static_cast<unsigned>(path.size());
-    auto length         = _length;
-    if (!length) length = onion::rand_between(2,sz-2);
+    const unsigned sz       = static_cast<unsigned>(path.size());
+    auto length             = _length;
+    if (length < 2 ) length = onion::rand_between(2,sz-2);
 
     std::vector<path_t> res;
     res.reserve(sz-length-1);
@@ -241,16 +241,16 @@ std::vector<path_t> _2optAll::operator()(const path_t &path)
     return std::vector<path_t>( res );
 }
 
-path::AbstractObjective::cost_type path::Objective::operator()(const path_t &p)
+path::Objective::cost_type path::tspObjective::operator()(const path_t &p)
 {
     const auto & sz = p.size();
-    path::AbstractObjective::cost_type cost = 0;
+    path::Objective::cost_type cost = 0;
     for(unsigned i = 0; i < sz-1; ++i)
         cost += _data.at(p[i]).at(p[i+1]);
     return cost;
 }
 
-path::Objective::Objective(const tsp_problem_data_t &d):
+path::tspObjective::tspObjective(const tsp_problem_data_t &d):
     onion::Objective<path_t,tsp_problem_data_t>(d){}
 
 
