@@ -61,28 +61,31 @@ public:
     explicit Onion(core_ptr_t core): _core(core), _outerLayer(_core){}
     Onion(): _core( new CoreType ), _outerLayer(_core){}
 
+
     template<class LayerType>
-    Onion<CoreType>& addLayer(){
+    std::shared_ptr<LayerType> addLayer(){
 
         auto newlayer = std::make_shared<LayerType>(_outerLayer);
         _outerLayer = newlayer;
-        return *this;
+        return newlayer;
+
     }
 
     template<class LayerType, class LayerParamType>
-    Onion<CoreType>& addLayer(LayerParamType& p){
+    std::shared_ptr<LayerType> addLayer(LayerParamType& p){
 
         auto newlayer = std::make_shared<LayerType>(_outerLayer)(p);
         _outerLayer = newlayer;
-        return *this;
+        return newlayer;
+
     }
 
     template<class LayerType, class LayerParamType>
-    Onion<CoreType>& addLayer(LayerParamType p){
+    std::shared_ptr<LayerType> addLayer(LayerParamType p){
 
         auto newlayer = std::make_shared<LayerType>(_outerLayer,p);
         _outerLayer = newlayer;
-        return *this;
+        return newlayer;
     }
 
     template<class... Args>
@@ -90,9 +93,9 @@ public:
         return InvokeFunctor<core_ptr_t>(_outerLayer,args...);
     }
 
-    template<class C> C& as() const {
-        return as<C>(_outerLayer.get());
-    }
+//    template<class C> C& as() const {
+//        return as<C>(_outerLayer.get());
+//    }
 
     CoreType& core(){
         return *_core;
@@ -100,19 +103,19 @@ public:
 
 private:
 
-    using Layer = OnionLayer<CoreType>;
+//    using Layer = OnionLayer<CoreType>;
 
-    template<class C> C& as(CoreType* ptr) const {
-        C* cptr = dynamic_cast<C*>(ptr);
-        if (cptr) return *cptr;
+//    template<class C> C& as(CoreType* ptr) const {
+//        C* cptr = dynamic_cast<C*>(ptr);
+//        if (cptr) return *cptr;
 
-        // here, the pointer can point to a layer or to the core
-        // if points to a layer, keep recurring
-        Layer* lptr = dynamic_cast< OnionLayer<CoreType>* >(ptr);
+//        // here, the pointer can point to a layer or to the core
+//        // if points to a layer, keep recurring
+//        Layer* lptr = dynamic_cast< OnionLayer<CoreType>* >(ptr);
 
-        if (lptr) return as<C>( lptr->_next.get() );
-        else throw std::runtime_error("Onion::as: bad cast" );
-    }
+//        if (lptr) return as<C>( lptr->_next.get() );
+//        else throw std::runtime_error("Onion::as: bad cast" );
+//    }
 
     const core_ptr_t _core;
     core_ptr_t _outerLayer;

@@ -65,6 +65,10 @@ public:
         _stopConditions.push_back( {action,std::make_shared<StopCondition<T>>(t)} );
     }
 
+    void resetObject(AResettable& v){
+        _resObjects.push_back(v);
+    }
+
     void reset();
 
     std::string getStopCondition() const;
@@ -86,6 +90,7 @@ private:
     std::vector<stop_condition_pair_t>  _stopConditions;
     std::string                         _stopConditionLabel;
     ResettableValue<unsigned>           _loopCount;
+    std::vector< std::reference_wrapper<AResettable> > _resObjects;
 };
 
 

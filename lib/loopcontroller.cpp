@@ -30,6 +30,7 @@ void LoopController::reset()
 {
     for( auto sc : _stopConditions )
         if ( sc._stop_action == ON_STOP::RESET ) sc._ptr->reset();
+    for( auto obj : _resObjects ) obj.get().reset();
 }
 
 string LoopController::getStopCondition() const

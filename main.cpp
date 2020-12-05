@@ -63,28 +63,30 @@ try
 
     // Decorator layers
 
-    exploration_loop_controller.        addLayer< LoopTimer >();
-    intensification_loop_controller.    addLayer< LoopRecorder >( parameters("intensifications").as<unsigned>()/100 );
+    auto exploration_timer          = exploration_loop_controller.addLayer< LoopTimer >();
+    auto intensification_loop_rec   = intensification_loop_controller.addLayer< LoopRecorder >( parameters("intensifications").as<unsigned>()/100 );
     //intensification_loop_controller.    addLayer< LoopTimer >();
 
-    repetitions_loop_controller.        addLayer< LoopCounter >();
-    exploration_loop_controller.        addLayer< LoopCounter >();
-    intensification_loop_controller.    addLayer< LoopCounter >();
+    auto repLoopCountTotal = repetitions_loop_controller.addLayer< LoopCounter >();
+    auto expLoopCountTotal = exploration_loop_controller.addLayer< LoopCounter >();
+    auto intLoopCountTotal = intensification_loop_controller.addLayer< LoopCounter >();
 
-    create.             addLayer< path::CreatorCallsCounter >();
+    create.addLayer< path::CreatorCallsCounter >();
 
-    objective.          addLayer< path::ObjectiveCallsCounter >();
+    auto objective_calls_at_exp = objective.addLayer< path::ObjectiveCallsCounter >();
+    auto objective_calls_total  = objective.addLayer< path::ObjectiveCallsCounter >();
 
-    updateRun.          addLayer< path::UpdateRecorder >();
-
-    updateExploration.  addLayer< path::UpdateRecorder >();
+    auto updateRunRec = updateRun.addLayer< path::UpdateRecorder >();
+    auto updateExpRec = updateExploration.addLayer< path::UpdateRecorder >();
 
     // stop conditions
-    auto stop = StopCondition<>("Objective fcn calls",objective.as< path::ObjectiveCallsCounter >(),1e6);
+    auto total_obj_calls_stop = StopCondition<>("Objective fcn calls", *objective_calls_total, 1e6);
 
-    repetitions_loop_controller     .core().addStopCondition( stop );
-    exploration_loop_controller     .core().addStopCondition( stop );
-    intensification_loop_controller .core().addStopCondition( stop , LoopController::ON_STOP::RESET );
+    //repetitions_loop_controller     .core().addStopCondition( total_obj_calls_stop );
+    //exploration_loop_controller     .core().addStopCondition( total_obj_calls_stop );
+
+    //auto int_obj_calls_stop = StopCondition<>("Objective fcn calls", *objective_calls_at_exp, 1e6);
+    intensification_loop_controller.core().resetObject( *objective_calls_at_exp );
 
 
     // Tracks
@@ -106,24 +108,24 @@ try
     unsigned rep_cost;
 
     MultiTrack<unsigned> mtrack_exp_cost        ("exp. cost",        (onion::RefValue<unsigned>(exp_cost) ),        intensification_loop_controller.core() );
-    MultiTrack<double>   mtrack_exp_time        ("exp. time",        exploration_loop_controller.as<Timer>(),   intensification_loop_controller.core() );
-    MultiTrack<unsigned> mtrack_obj_fcn_calls   ("obj. fcn. calls",  objective.as<path::ObjectiveCallsCounter>(),   intensification_loop_controller.core() );
+    MultiTrack<double>   mtrack_exp_time        ("exp. time",        *exploration_timer,   intensification_loop_controller.core() );
+    MultiTrack<unsigned> mtrack_obj_fcn_calls   ("obj. fcn. calls",  *objective_calls_at_exp,   intensification_loop_controller.core() );
 
-    intensification_loop_controller.as<Recorder>().addTrack(mtrack_exp_cost);
-    intensification_loop_controller.as<Recorder>().addTrack(mtrack_exp_time);
-    intensification_loop_controller.as<Recorder>().addTrack(mtrack_obj_fcn_calls);
-    intensification_loop_controller.as<Recorder>().start();
+    intensification_loop_rec->addTrack(mtrack_exp_cost);
+    intensification_loop_rec->addTrack(mtrack_exp_time);
+    intensification_loop_rec->addTrack(mtrack_obj_fcn_calls);
+    intensification_loop_rec->start();
 
-    Track<double> track_exp_time    ("exp. time", exploration_loop_controller.as<Timer>());
+    Track<double> track_exp_time    ("exp. time", *exploration_timer );
     Track<unsigned> track_exp_cost  ("exp. cost", onion::RefValue<unsigned>(exp_cost)    );
     Track<unsigned> track_rep_cost  ("rep. cost", onion::RefValue<unsigned>(rep_cost)    );
 
-    updateExploration.as<Recorder>()    .addTrack(track_exp_time);
-    updateExploration.as<Recorder>()    .addTrack(track_exp_cost);
-    updateRun.as<Recorder>()            .addTrack(track_rep_cost);
+    updateExpRec->addTrack(track_exp_time);
+    updateExpRec->addTrack(track_exp_cost);
+    updateRunRec->addTrack(track_rep_cost);
 
-    updateExploration.as<Recorder>()    .start();
-    updateRun.as<Recorder>()            .start();
+    updateExpRec->start();
+    updateRunRec->start();
     // recorders
 
     //exploration_loop_controller.as<Recorder>()    .addTrack(  bestXexplLoops  );
@@ -179,11 +181,9 @@ try
                                                           << intensification_loop_controller.core().getStopCondition() << endl;
     cout<< "Total time                                : " << fixed << setprecision(2) << totalTimer.getValue() << " (s)\n";
     cout<< "Avg. time per run                         : " << fixed << setprecision(2) << totalTimer.getValue() / parameters("repetitions").as<unsigned>() << " (s)\n";
-    cout<< "Total Runs/Explorations/Intensifications  : " << repetitions_loop_controller.as<Counter>().getValue() << " / "
-                                                          << exploration_loop_controller.as<Counter>().getValue()<< " / "
-                                                          << intensification_loop_controller.as<Counter>().getValue() <<endl;
+    cout<< "Total Runs/Explorations/Intensifications  : " << repLoopCountTotal->getValue() << " / " << expLoopCountTotal->getValue()<< " / " << intLoopCountTotal->getValue() << endl;
 
-    cout<< "Obj. fcn. calls                           : "  << objective.as<Counter>().getValue()  << "\n";
+    cout<< "Obj. fcn. calls                           : "  << objective_calls_total->getValue()  << "\n";
     cout<< "Run time (min/max/avg)                    : " << fixed << setprecision(4) << timeStats.min() << " / " << timeStats.max() << " / " << timeStats.average() << " (s)\n";
     cout<< "Final result (all exps., min/max/avg)     : " << setprecision(0) << costStats.min() << " / " << costStats.max() << " / " << costStats.average() << endl;
     cout<< "Final result (only reps., min/max/avg)    : " << setprecision(0) << repStats.min() << " / " << repStats.max() << " / " << repStats.average() << endl;
