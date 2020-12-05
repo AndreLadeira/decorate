@@ -65,7 +65,7 @@ try
 
     exploration_loop_controller.        addLayer< LoopTimer >();
     intensification_loop_controller.    addLayer< LoopRecorder >( parameters("intensifications").as<unsigned>()/100 );
-    intensification_loop_controller.    addLayer< LoopTimer >();
+    //intensification_loop_controller.    addLayer< LoopTimer >();
 
     repetitions_loop_controller.        addLayer< LoopCounter >();
     exploration_loop_controller.        addLayer< LoopCounter >();
@@ -80,11 +80,11 @@ try
     updateExploration.  addLayer< path::UpdateRecorder >();
 
     // stop conditions
-    auto stop = StopCondition<>("Objective fcn calls",objective.as<ResettableCounter>(),1e6);
+    auto stop = StopCondition<>("Objective fcn calls",objective.as< path::ObjectiveCallsCounter >(),1e6);
 
-    repetitions_loop_controller     .core().addStopCondition( stop, LoopController::SC_OWNER::OTHER );
-    exploration_loop_controller     .core().addStopCondition( stop, LoopController::SC_OWNER::OTHER );
-    intensification_loop_controller .core().addStopCondition( stop, LoopController::SC_OWNER::OTHER );
+    repetitions_loop_controller     .core().addStopCondition( stop );
+    exploration_loop_controller     .core().addStopCondition( stop );
+    intensification_loop_controller .core().addStopCondition( stop , LoopController::ON_STOP::RESET );
 
 
     // Tracks
@@ -106,8 +106,8 @@ try
     unsigned rep_cost;
 
     MultiTrack<unsigned> mtrack_exp_cost        ("exp. cost",        (onion::RefValue<unsigned>(exp_cost) ),        intensification_loop_controller.core() );
-    MultiTrack<double>   mtrack_exp_time        ("exp. time",        intensification_loop_controller.as<Timer>(),   intensification_loop_controller.core() );
-    MultiTrack<unsigned> mtrack_obj_fcn_calls   ("obj. fcn. calls",  objective.as<ResettableCounter>(),             intensification_loop_controller.core() );
+    MultiTrack<double>   mtrack_exp_time        ("exp. time",        exploration_loop_controller.as<Timer>(),   intensification_loop_controller.core() );
+    MultiTrack<unsigned> mtrack_obj_fcn_calls   ("obj. fcn. calls",  objective.as<path::ObjectiveCallsCounter>(),   intensification_loop_controller.core() );
 
     intensification_loop_controller.as<Recorder>().addTrack(mtrack_exp_cost);
     intensification_loop_controller.as<Recorder>().addTrack(mtrack_exp_time);
@@ -137,19 +137,19 @@ try
     best_overall_cost = objective(best_overall_path);
     totalTimer.start();
 
-    while( repetitions_loop_controller() ) // SEE: OUT (TOTAL TIMER, TOTAL OBJCALLS), SET: SELF
+    while( repetitions_loop_controller() )
     {
         onion::reset_random_engine();
 
         auto rep_best_path = create();
         rep_cost = objective(rep_best_path);
 
-        while( exploration_loop_controller() )  // SEE: OUT, SET: REP (TIMER, OBJ CALLS), SELF
+        while( exploration_loop_controller() )
         {
             auto exp_best_path = create();
             exp_cost = objective( exp_best_path );
 
-            while( intensification_loop_controller() ) // SEE: OUT, REP. SET: EXP (STAG, OBJ CALLS), SELF
+            while( intensification_loop_controller() )
             {
                 auto neighbor = neighborhood(exp_best_path);
                 auto newcost = objective( neighbor );

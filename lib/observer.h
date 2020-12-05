@@ -13,14 +13,14 @@ public:
 
 class Subject{
 public:
-    void add(Observer& o){
+    void addObserver(Observer& o){
         for( auto it = _observers.begin(); it != _observers.end(); it++){
             if ( &(it->get()) == &o) return;
         }
         _observers.push_back(o);
     }
 
-    void remove(Observer& o){
+    void removeObserver(Observer& o){
         for( auto it = _observers.begin(); it != _observers.end(); it++){
             if ( &(it->get()) == &o){
                 _observers.erase(it);

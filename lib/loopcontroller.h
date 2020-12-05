@@ -37,13 +37,16 @@ public:
         _value.reset();
     }
 
-
 private:
 
     ResettableValue<T>& _value;
-    const T _limit;
-    Compare<T> _compare;
+    const T             _limit;
+    Compare<T>          _compare;
 };
+
+
+
+
 
 class LoopController :
         public NonCopyable,
@@ -55,11 +58,11 @@ public:
     virtual ~LoopController() = default;
     virtual bool operator()();
 
-    enum class SC_OWNER { THIS, OTHER };
+    enum class ON_STOP { RESET, NO_ACTION };
 
     template<typename T> void addStopCondition(
-            const StopCondition<T>& t, SC_OWNER owner = SC_OWNER::THIS){
-        _stopConditions.push_back( {owner,std::make_shared<StopCondition<T>>(t)} );
+            const StopCondition<T>& t, ON_STOP action = ON_STOP::NO_ACTION ){
+        _stopConditions.push_back( {action,std::make_shared<StopCondition<T>>(t)} );
     }
 
     void reset();
@@ -70,12 +73,14 @@ public:
         return _loopCount.getValue();
     }
 
+
+
 private:
     using stop_condition_ptr_t = std::shared_ptr<__StopCondition>;
 
     struct stop_condition_pair_t{
-        SC_OWNER owner;
-        stop_condition_ptr_t ptr;
+        ON_STOP                 _stop_action;
+        stop_condition_ptr_t    _ptr;
     };
 
     std::vector<stop_condition_pair_t>  _stopConditions;

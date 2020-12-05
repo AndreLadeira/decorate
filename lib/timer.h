@@ -14,6 +14,7 @@ struct Timer :
     virtual ~Timer() = default;
     virtual double getValue(void) const;
     virtual void setValue(const double& v);
+    bool started() const;
     void start();
     void stop();
     virtual void reset();

@@ -85,22 +85,21 @@ struct ACounter{
 };
 
 struct Counter :
-        virtual public Value<unsigned>,
+        virtual public ResettableValue<unsigned>,
         public ACounter
 {
-    explicit Counter(unsigned start = 0);
+    explicit Counter(unsigned v0 = 0);
     virtual ~Counter() = default;
     void count(unsigned amount = 1);
-
 };
 
-struct ResettableCounter :
-        virtual public ResettableValue<unsigned>,
-        virtual public Counter{
+//struct ResettableCounter :
+//        virtual public ResettableValue<unsigned>,
+//        virtual public Counter{
 
-    explicit ResettableCounter(unsigned start = 0);
-    virtual ~ResettableCounter() = default;
-};
+//    explicit ResettableCounter(unsigned start = 0);
+//    virtual ~ResettableCounter() = default;
+//};
 
 } // namespace onion
 

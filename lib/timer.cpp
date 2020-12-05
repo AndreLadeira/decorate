@@ -22,18 +22,19 @@ void Timer::setValue(const double &v){}
 #pragma GCC diagnostic pop
 #endif
 
+bool Timer::started() const
+{
+    return _started;
+}
+
 void Timer::start(){
-    if (!_started){
-        _begin = clock();
-        _started = true;
-    }
+    _begin = clock();
+    _started = true;
 }
 void Timer::stop()
 {
-    if (_started) {
-        _end = clock();
-        _started = false;
-    }
+    _end = clock();
+    _started = false;
 }
 void Timer::reset(){
     if ( _started ) _begin = clock();

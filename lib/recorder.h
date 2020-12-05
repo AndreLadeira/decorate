@@ -60,9 +60,9 @@ class MultiTrack :
         public Observer
 {
 public:
-    explicit MultiTrack(std::string name,const AValue<T>& source, Subject& trigger):
+    explicit MultiTrack(std::string name,const AValue<T>& source, Subject& subject):
         __Track(name),_source(source){
-        trigger.add(*this);
+        subject.addObserver(*this);
     }
     virtual ~MultiTrack() = default;
 

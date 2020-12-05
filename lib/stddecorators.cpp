@@ -2,24 +2,15 @@
 
 using namespace onion;
 
+LoopTimer::LoopTimer(OnionLayer::core_ptr_t next):
+    OnionLayer<LoopController>(next){
+}
+
 bool LoopTimer::operator()()
 {
-    static bool started     = false;
-    auto        isrunning   = this->_next->operator()();
-
-    if (isrunning){
-        if (!started) {
-            this->start();
-            started = true;
-        }
-    }
-    else{
-        if (started) {
-            this->stop(); started = false;
-        }
-    }
-
-    return isrunning;
+    auto running = this->_next->operator()();
+    Timer::start();
+    return running;
 }
 
 bool LoopRecorder::operator()()

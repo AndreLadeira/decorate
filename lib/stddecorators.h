@@ -18,8 +18,7 @@ class LoopTimer :
         public OnionLayer<LoopController>
 {
 public:
-    LoopTimer(OnionLayer<LoopController>::core_ptr_t next):
-        OnionLayer<LoopController>(next){}
+    LoopTimer(OnionLayer<LoopController>::core_ptr_t next);
     virtual bool operator()();
 };
 
@@ -49,7 +48,7 @@ public:
 template<typename solution_t>
 class CreatorCallsCounter:
         public Creator<solution_t>,
-        public ResettableCounter,
+        public Counter,
         public OnionLayer<Creator<solution_t>>
 {
 public:
@@ -69,14 +68,14 @@ template< typename solution_t,
           typename Compare<cost_t>::compare_fcn_t c>
 class UpdateStagnationCounter :
         public Updater<solution_t,cost_t, c>,
-        public ResettableCounter,
+        public Counter,
         public OnionLayer<Updater<solution_t,cost_t,c>>
 {
 public:
     using OnionLayerBase = OnionLayer<Updater<solution_t,cost_t,c>>;
 
     UpdateStagnationCounter(typename OnionLayerBase::core_ptr_t next):
-        ResettableCounter(0),OnionLayerBase(next){}
+        Counter(0),OnionLayerBase(next){}
 
     virtual bool operator()(solution_t& bestSoFar,
                         cost_t& bsfCost,
@@ -148,7 +147,7 @@ template< typename solution_t,
           typename cost_t = unsigned >
 class ObjectiveCallsCounter :
         public Objective<solution_t,problem_data_t, cost_t>,
-        public ResettableCounter,
+        public Counter,
         public OnionLayer<Objective<solution_t,problem_data_t, cost_t>>
 {
 public:
