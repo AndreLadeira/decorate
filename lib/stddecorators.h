@@ -117,6 +117,45 @@ public:
     }
 };
 
+template< typename solution_t,
+          typename cost_t,
+          typename Compare<cost_t>::compare_fcn_t c>
+class UpdateLocalRecorder :
+        public Updater<solution_t,cost_t, c>,
+        public Recorder,
+        public OnionLayer<Updater<solution_t,cost_t,c>>
+{
+public:
+    using OnionLayerBase = OnionLayer<Updater<solution_t,cost_t,c>>;
+
+    UpdateLocalRecorder(typename OnionLayerBase::core_ptr_t next, unsigned regularity = 1):
+        Recorder(regularity),OnionLayerBase(next),_candidate_cost(0),
+        _local_tr("local", _candidate_cost  )  {
+        this->addTrack ( _local_tr );
+    }
+
+    virtual bool operator()(solution_t& bestSoFar,
+                        cost_t& bsfCost,
+                        const solution_t& candidate,
+                        const cost_t candidateCost )
+    {
+        auto result = (*this->_next)(bestSoFar,bsfCost,candidate, candidateCost);
+        _candidate_cost.setValue(candidateCost);
+        this->record();
+        return result;
+    }
+
+    template<class T>
+    Track<T> getLocalTrack(){
+        return this->template getTrack<T>("local");
+    }
+
+private:
+
+    Value<cost_t> _candidate_cost;
+    Track<cost_t> _local_tr;
+};
+
 
 namespace max{
 
@@ -127,6 +166,10 @@ UpdateStagnationCounter<solution_t,cost_t,Compare<cost_t>::greater>;
 template< typename solution_t,typename cost_t = unsigned>
 using UpdateRecorder =
 UpdateRecorder<solution_t,cost_t,Compare<cost_t>::greater>;
+
+template< typename solution_t,typename cost_t = unsigned>
+using UpdateLocalRecorder =
+UpdateLocalRecorder<solution_t,cost_t,Compare<cost_t>::greater>;
 
 }
 
@@ -139,6 +182,10 @@ UpdateStagnationCounter<solution_t,cost_t,Compare<cost_t>::less>;
 template< typename solution_t,typename cost_t = unsigned>
 using UpdateRecorder =
 UpdateRecorder<solution_t,cost_t,Compare<cost_t>::less>;
+
+template< typename solution_t,typename cost_t = unsigned>
+using UpdateLocalRecorder =
+UpdateLocalRecorder<solution_t,cost_t,Compare<cost_t>::less>;
 
 }
 

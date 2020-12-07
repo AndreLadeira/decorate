@@ -81,6 +81,7 @@ using CreatorCallsCounter = CreatorCallsCounter<tsp::path_t>;
 using ObjectiveCallsCounter = ObjectiveCallsCounter<tsp::path_t, tsp::tsp_problem_data_t>;
 using ObjectiveRecorder = ObjectiveRecorder<tsp::path_t, tsp::tsp_problem_data_t>;
 using UpdateRecorder = min::UpdateRecorder<tsp::path_t>;
+using UpdateLocalRecorder = min::UpdateLocalRecorder<tsp::path_t>;
 
 }
 

@@ -46,7 +46,9 @@ HEADERS += \
     lib/timer.h \
     lib/values.h \
     lib/observer.h \
-    lib/trackutil.h
+    lib/trackutil.h \
+    tsp_full.h \
+    tsp_min.h
 
 CONFIG(debug, debug|release) {
     DEFINES += "__DEBUG__"

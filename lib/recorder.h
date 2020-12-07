@@ -157,6 +157,17 @@ public:
            _tracks.push_back(track);
     }
 
+    template<class T>
+    Track<T> getTrack(std::string track_name){
+        for(const auto & tr: _tracks){
+            if (tr.get().getName() == track_name){
+                const Track<T>& trref = dynamic_cast<const Track<T>&>(tr.get());
+                return Track<T>( trref );
+            }
+        }
+        throw std::runtime_error( std::string("[Recorder::getTrack] - no such track:") + track_name );
+    }
+
 private:
 
     std::vector<std::reference_wrapper<__Track>> _tracks;
