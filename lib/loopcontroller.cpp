@@ -1,14 +1,16 @@
 #include "loopcontroller.h"
+#include <sstream>
+#include <iomanip>
 
 using namespace onion;
 using namespace std;
 
 __StopCondition::__StopCondition(const std::string &label):LabeledObject(label){}
 
-LoopController::LoopController(const string label, unsigned maxLoops)
-    :_loopCount(0){
+LoopController::LoopController(unsigned maxLoops, const char * const& label):
+    LabeledObject(label),_loopCount(0){
     if (maxLoops != 0)
-        this->addStopCondition( StopCondition<>(label, this->_loopCount, maxLoops),
+        this->addStopCondition( StopCondition<>("Loop count", this->_loopCount, maxLoops),
                                 ON_STOP::RESET );
 }
 
@@ -36,4 +38,17 @@ void LoopController::reset()
 string LoopController::getStopCondition() const
 {
     return _stopConditionLabel;
+}
+
+string LoopController::getConditions() const
+{
+    string str;
+    std::string separator;
+    for( auto sc : _stopConditions ){
+        str += separator += sc._ptr->getLabel();
+        str += (" (" + sc._ptr->getLimit() + ")" );
+        if ( sc._stop_action == ON_STOP::RESET ) str += "(R)";
+        separator = ",";
+    }
+    return str;
 }

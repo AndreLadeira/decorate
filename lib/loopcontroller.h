@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include "facilities.h"
 #include "values.h"
@@ -13,10 +14,11 @@ namespace onion{
 class __StopCondition : public onion::LabeledObject
 {
 public:
-    explicit __StopCondition(const std::string& label);
+    explicit __StopCondition(const std::string& tag);
     virtual ~__StopCondition() = default;
     virtual bool satisfied() const = 0;
     virtual void reset() = 0;
+    virtual std::string getLimit() const = 0;
 };
 
 
@@ -37,6 +39,14 @@ public:
         _value.reset();
     }
 
+    std::string getLimit() const{
+        std::stringstream ss;
+        //ss << std::fixed << std::setprecision(4);
+        if ( _limit >= 1000 ) ss << std::scientific;
+        ss << _limit;
+        return ss.str();
+    }
+
 private:
 
     ResettableValue<T>& _value;
@@ -44,17 +54,14 @@ private:
     Compare<T>          _compare;
 };
 
-
-
-
-
 class LoopController :
         public NonCopyable,
-        public Subject
+        public Subject,
+        public LabeledObject
 {
 public:
 
-    LoopController(const std::string label = "LoopController", unsigned maxLoops = 0);
+    LoopController(unsigned maxLoops = 0, const char * const& = "LoopController");
     virtual ~LoopController() = default;
     virtual bool operator()();
 
@@ -72,6 +79,7 @@ public:
     void reset();
 
     std::string getStopCondition() const;
+    std::string getConditions() const;
 
     unsigned getLoopCount(){
         return _loopCount.getValue();

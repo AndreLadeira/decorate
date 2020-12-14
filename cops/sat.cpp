@@ -4,9 +4,9 @@
 #include <sstream>
 
 using namespace std;
-using namespace onion::cops;
+using namespace onion::cops::sat;
 
-sat_data_t sat_cnfDataLoader::load(istream& is) const
+sat_data_t sat_cnfDataLoader::operator()(istream& is)
 try
 {
     string s;

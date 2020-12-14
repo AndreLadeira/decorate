@@ -7,8 +7,7 @@
 namespace onion{
 
 struct Timer :
-        public AValue<double>,
-        public AResettable
+        public ResettableValue<double>
 {
     explicit Timer();
     virtual ~Timer() = default;

@@ -60,7 +60,7 @@ class MultiTrack :
         public Observer
 {
 public:
-    explicit MultiTrack(std::string name,const AValue<T>& source, Subject& subject):
+    MultiTrack(std::string name,const AValue<T>& source, Subject& subject):
         __Track(name),_source(source){
         subject.addObserver(*this);
     }
@@ -96,13 +96,25 @@ public:
     }
 
     virtual void update(){
-        if ( _track.size() != 0 ) {
+        if ( _record.size() && (_track.size() < _record.back().size() ) ){
+            // incomplete track
+            _track.clear();
+            return;
+        }
+        else{
             _record.push_back(_track);
             _track.clear();
         }
     }
 
 private:
+
+//    friend class Recorder;
+
+//    void removeLastTrack(){
+//        if (!_record.size() ) return;
+//        else _record.erase( _record.end() - 1 );
+//    }
 
     const AValue<T>& _source;
     std::vector< std::list<T> > _record;

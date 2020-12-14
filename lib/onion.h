@@ -4,6 +4,7 @@
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
+#include <string>
 
 namespace onion{
 
@@ -58,9 +59,15 @@ public:
 
     using core_ptr_t = std::shared_ptr<CoreType>;
 
-    explicit Onion(core_ptr_t core): _core(core), _outerLayer(_core){}
-    Onion(): _core( new CoreType ), _outerLayer(_core){}
+    explicit Onion(core_ptr_t core):
+        _core(core), _outerLayer(_core){
 
+    }
+
+    Onion():
+        _core( std::make_shared<CoreType>() ), _outerLayer(_core){
+
+    }
 
     template<class LayerType>
     std::shared_ptr<LayerType> addLayer(){
@@ -101,9 +108,20 @@ public:
         return *_core;
     }
 
-private:
+    using Layer = OnionLayer<CoreType>;
 
-//    using Layer = OnionLayer<CoreType>;
+    std::string getLayers( CoreType* ptr = nullptr ){
+
+        if (!ptr) ptr = _outerLayer.get();
+
+       Layer* lptr = dynamic_cast< OnionLayer<CoreType>* >(ptr);
+       if (!lptr)
+           return ptr->getLabel();
+       else
+           return ptr->getLabel() + ";" + getLayers(lptr->_next.get());
+
+    }
+
 
 //    template<class C> C& as(CoreType* ptr) const {
 //        C* cptr = dynamic_cast<C*>(ptr);

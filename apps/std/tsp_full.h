@@ -1,5 +1,5 @@
-#ifndef _TSP_FULL_H_
-#define _TSP_FULL_H_
+#ifndef TSP_FULL_H
+#define TSP_FULL_H
 
 #include <iostream>
 #include <fstream>
@@ -41,7 +41,7 @@ int tsp_full(int argc, char* argv[])
 
     ifstream file( parameters("file_name") );
     file.exceptions( istream::failbit | istream::badbit  );
-    auto data = cops::tsp::tsp_tsplibDataLoader()(file);
+    auto data = cops::tsp::tsplibDataLoader()(file);
     file.close();
 
     // Loop Controller Onions
@@ -83,12 +83,18 @@ int tsp_full(int argc, char* argv[])
     auto updateExpStagCnt = updateExp.addLayer< path::UpdateStagnationCounter >();
 
     // stop conditions
-    auto total_obj_calls_stop = StopCondition<>("Objective fcn calls", *objective_calls_total, 1e6);
+    //auto total_obj_calls_stop = StopCondition<>("Objective fcn calls", *objective_calls_total, 2e6);
 
-    repetitions_loop_controller     .core().addStopCondition( total_obj_calls_stop );
-    exploration_loop_controller     .core().addStopCondition( total_obj_calls_stop );
+    //repetitions_loop_controller     .core().addStopCondition( total_obj_calls_stop );
+    //exploration_loop_controller     .core().addStopCondition( total_obj_calls_stop );
+    //intensification_loop_controller .core().addStopCondition( total_obj_calls_stop );
 
-    //auto int_obj_calls_stop = StopCondition<>("Objective fcn calls", *objective_calls_at_exp, 1e6);
+    //auto exp_time_stop = StopCondition<double>("Exploration time", *exploration_timer, 1.0);
+    //exploration_loop_controller     .core().addStopCondition( exp_time_stop );
+    //intensification_loop_controller .core().addStopCondition( exp_time_stop );
+
+
+    //auto int_obj_calls_stop = StopCondition<>("Objective fcn calls", *objective_calls_at_exp, 1e8);
     intensification_loop_controller.core().resetObject( *objective_calls_at_exp );
 
 
@@ -110,9 +116,9 @@ int tsp_full(int argc, char* argv[])
     unsigned exp_cost;
     unsigned rep_cost;
 
-    MultiTrack<unsigned> mtrack_exp_cost        ("exp. cost",        (onion::RefValue<unsigned>(exp_cost) ),        intensification_loop_controller.core() );
-    MultiTrack<double>   mtrack_exp_time        ("exp. time",        *exploration_timer,   intensification_loop_controller.core() );
-    MultiTrack<unsigned> mtrack_obj_fcn_calls   ("obj. fcn. calls",  *objective_calls_at_exp,   intensification_loop_controller.core() );
+    MultiTrack<unsigned> mtrack_exp_cost        ("exp. cost",        (onion::RefValue<unsigned>(exp_cost) ),    intensification_loop_controller.core() );
+    MultiTrack<double>   mtrack_exp_time        ("exp. time",        *exploration_timer,                        intensification_loop_controller.core() );
+    MultiTrack<unsigned> mtrack_obj_fcn_calls   ("obj. fcn. calls",  *objective_calls_at_exp,                   intensification_loop_controller.core() );
 
     intensification_loop_rec->addTrack(mtrack_exp_cost);
     intensification_loop_rec->addTrack(mtrack_exp_time);

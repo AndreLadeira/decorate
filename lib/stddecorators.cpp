@@ -2,10 +2,6 @@
 
 using namespace onion;
 
-LoopTimer::LoopTimer(OnionLayer::core_ptr_t next):
-    OnionLayer<LoopController>(next){
-}
-
 bool LoopTimer::operator()()
 {
     auto running = this->_next->operator()();
@@ -16,10 +12,15 @@ bool LoopTimer::operator()()
 bool LoopRecorder::operator()()
 {
     Recorder::record();
-
     auto running = this->_next->operator()();
-    if ( !running ) Recorder::restart();
-
+    if ( !running )
+        Recorder::restart();
+    return running;
+}
+bool LoopResetObject::operator()()
+{
+    auto running = this->_next->operator()();
+    if ( !running ) _object.reset();
     return running;
 }
 
@@ -29,3 +30,5 @@ bool LoopCounter::operator()()
     if ( isrunning ) Counter::count();
     return isrunning;
 }
+
+

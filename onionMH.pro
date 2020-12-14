@@ -4,51 +4,59 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += \
-        main.cpp \
     cops/mkp.cpp \
     cops/sat.cpp \
     cops/tsp.cpp \
-    lib/parameters.cpp \
-    mh/rrga.cpp \
-    lib/loopcontroller.cpp \
-    lib/facilities.cpp \
-    lib/stddecorators.cpp \
-    lib/random.cpp \
     lib/abstractvalues.cpp \
+    lib/facilities.cpp \
+    lib/loopcontroller.cpp \
+    lib/parameters.cpp \
+    lib/random.cpp \
+    lib/recorder.cpp \
+    lib/stddecorators.cpp \
     lib/timer.cpp \
     lib/values.cpp \
-    lib/recorder.cpp
+    mh/rrga.cpp \
+    mh/sian.cpp \
+    main.cpp
 
 HEADERS += \
-    lib/algorithm.h \
-    cops/tsp.h \
-    cops/sat.h \
-    lib/facilities.h \
-    garbage.h \
-    lib/dataload.h \
+    apps/delta/tsp_min_d.h \
+    apps/std/mkp_min.h \
+    apps/std/tsp_full.h \
+    apps/std/tsp_min.h \
     cops/mkp.h \
-    test/dataloaders.h \
-    lib/parameters.h \
-    mh/rrga.h \
-    lib/create.h \
-    lib/neighbor.h \
+    cops/sat.h \
+    cops/tsp.h \
     lib/accept.h \
-    lib/objective.h \
-    lib/update.h \
+    lib/algorithm.h \
+    lib/create.h \
+    lib/dataload.h \
+    lib/facilities.h \
     lib/functor.h \
     lib/loopcontroller.h \
-    lib/stddecorators.h \
-    lib/types.h \
-    lib/random.h \
-    lib/onionmh.h \
-    lib/onion.h \
-    lib/recorder.h \
-    lib/timer.h \
-    lib/values.h \
+    lib/neighbor.h \
+    lib/objective.h \
     lib/observer.h \
+    lib/onion.h \
+    lib/onionmh.h \
+    lib/parameters.h \
+    lib/random.h \
+    lib/recorder.h \
+    lib/stddecorators.h \
+    lib/timer.h \
     lib/trackutil.h \
-    tsp_full.h \
-    tsp_min.h
+    lib/types.h \
+    lib/update.h \
+    lib/values.h \
+    mh/rrga.h \
+    mh/sian.h \
+    test/dataloaders.h \
+    garbage.h \
+    apps/stagtest/tsp_st.h \
+    apps/test_fcn.h \
+    apps/std/test_fcn.h \
+    apps/std/tsp_test.h
 
 CONFIG(debug, debug|release) {
     DEFINES += "__DEBUG__"

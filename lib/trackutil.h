@@ -133,6 +133,11 @@ std::vector<T> getMaxTrack(const MultiTrack<T>& mt)
 }
 
 template<typename T>
+std::ostream& operator<<(std::ostream& os, const TrackStats<T>& ts ){
+    os << ts.min() << "\t" << ts.average() << "\t" << ts.max();
+    return os;
+}
+template<typename T>
 std::ostream& operator<<(std::ostream& os, const MultiTrack<T>& mt )
 {
 
@@ -191,17 +196,23 @@ struct TrackPrinter{
         virtual std::string getName() const = 0;
         virtual unsigned getSize() const = 0;
     };
+
     template<typename T> struct track: public __track{
+
         track(std::string name, std::vector<T> t):_name(name),_track(t){}
+
         virtual void print(std::ostream& os, unsigned pos){
             os << _track.at(pos) << "\t";
         }
+
         virtual std::string getName() const {
             return _name;
         }
+
         virtual unsigned getSize() const {
             return _track.size();
         }
+
     private:
         const std::string _name;
         const std::vector<T> _track;

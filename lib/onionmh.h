@@ -13,10 +13,6 @@
 #include "timer.h"
 #include "update.h"
 #include "random.h"
-
-#include "cops/tsp.h"
-#include "cops/mkp.h"
-#include "cops/sat.h"
-
+#include "stddecorators.h"
 
 #endif // ONIONMH_H

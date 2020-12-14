@@ -6,11 +6,11 @@
 namespace onion {
 
 template< typename solution_t >
-class Creator : public NonCopyable
+class Creator : public NonCopyable, public LabeledObject
 {
 public:
 
-    Creator() = default;
+    Creator(const char * const& name):LabeledObject(name){}
     virtual ~Creator() = default;
 
     virtual solution_t operator()(void) = 0;

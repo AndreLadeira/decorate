@@ -14,11 +14,27 @@ class RRGAParametersChecker:
 public:
 
     RRGAParametersChecker( OnionLayer<ParameterLoader>::core_ptr_t next):
-        OnionLayer<ParameterLoader>(next){}
+        ParameterLoader("RRGAParametersChecker"),OnionLayer<ParameterLoader>(next){}
 
     virtual void operator()(std::istream& is, ParameterList& paramList);
     virtual ~RRGAParametersChecker() = default;
 };
+
+//template<
+//        typename solution_t,
+//        typename problem_data_t
+//        >
+
+//class LocalSearch
+//{
+//public:
+
+//    LocalSearch() = default;
+//    virtual void operator()();
+
+
+//};
+
 
 }
 

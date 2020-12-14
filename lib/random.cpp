@@ -9,9 +9,9 @@ namespace{
 static default_random_engine e(static_cast<unsigned int>(clock()));
 }
 
-void onion::reset_random_engine()
+void onion::reset_random_engine(unsigned int seed)
 {
-   e.seed(static_cast<unsigned int>(clock()));
+   e.seed( seed );
 }
 
 default_random_engine& onion::get_random_engine()

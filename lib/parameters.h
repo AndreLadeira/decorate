@@ -51,10 +51,10 @@ private:
     std::map<std::string,Parameter> _list;
 };
 
-class ParameterLoader : public NonCopyable
+class ParameterLoader : public NonCopyable, public LabeledObject
 {
 public:
-    ParameterLoader() = default;
+    ParameterLoader(const char * const& name = "ParameterLoader" ):LabeledObject(name){}
     virtual ~ParameterLoader() = default;
 
     virtual void operator()(std::istream& is, ParameterList& paramList);

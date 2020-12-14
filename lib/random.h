@@ -7,7 +7,7 @@ namespace onion{
 
 using rand_num_t = decltype(std::default_random_engine()());
 
-void reset_random_engine(void);
+void reset_random_engine(unsigned int seed = static_cast<unsigned int>(clock()));
 std::default_random_engine& get_random_engine(void);
 rand_num_t rand(void);
 double rand01(void);
