@@ -21,13 +21,38 @@ struct TrackStats
             T sum = std::accumulate(_track.cbegin(), _track.cend(), T(0) );
             return static_cast<double>(sum) / _track.size();
         }
-        else return 0;
+        else{
+        #ifdef __DEBUG__
+            throw std::runtime_error("TrackStats::average: empty track");
+        #else
+            return 0.0;
+        #endif
+        }
     }
     T min() const {
-      return *std::min_element(_track.cbegin(), _track.cend());
+        if ( _track.size() ){
+            return *std::min_element(_track.cbegin(), _track.cend());
+        }
+        else{
+        #ifdef __DEBUG__
+            throw std::runtime_error("TrackStats::min: empty track");
+        #else
+            return T(0);
+        #endif
+        }
+
     }
     T max() const {
-      return *std::max_element(_track.cbegin(), _track.cend());
+        if ( _track.size() ){
+            return *std::max_element(_track.cbegin(), _track.cend());
+        }
+        else{
+        #ifdef __DEBUG__
+            throw std::runtime_error("TrackStats::max: empty track");
+        #else
+            return T(0);
+        #endif
+        }
     }
     double stdDev() const {
         if ( _track.size() ){
@@ -36,7 +61,14 @@ struct TrackStats
             for(const auto& v : _track)
                 accum += (v - avg) * (v - avg);
             return std::sqrt( accum / _track.size() );
-        }else return 0;
+        }
+        else{
+        #ifdef __DEBUG__
+            throw std::runtime_error("TrackStats::stdDev: empty track");
+        #else
+            return 0.0;
+        #endif
+        }
     }
 
 private:
@@ -101,8 +133,8 @@ std::vector<T> getMinTrack(const MultiTrack<T>& mt)
 
     for(unsigned val = 0; val < trSz; ++val){
 
-        T min = std::numeric_limits<T>::max();
-        for(unsigned tr = 0; tr < trCount; ++tr)
+        T min = mt.getTrack(0).at(val);
+        for(unsigned tr = 1; tr < trCount; ++tr)
             if ( mt.getTrack(tr).at(val) < min )
                 min = mt.getTrack(tr).at(val);
         minTrack.push_back(min);
@@ -122,8 +154,8 @@ std::vector<T> getMaxTrack(const MultiTrack<T>& mt)
 
     for(unsigned val = 0; val < trSz; ++val){
 
-        T max = std::numeric_limits<T>::min();
-        for(unsigned tr = 0; tr < trCount; ++tr)
+        T max = mt.getTrack(0).at(val);
+        for(unsigned tr = 1; tr < trCount; ++tr)
             if ( mt.getTrack(tr).at(val) > max )
                 max = mt.getTrack(tr).at(val);
         maxTrack.push_back(max);
@@ -252,7 +284,7 @@ struct TrackPrinter{
     }
 
     void print(std::ostream& os) const {
-        os << std::setprecision(3);
+        os << std::fixed << std::setprecision(3);
         unsigned maxSz = std::numeric_limits<unsigned>::min();
         for(auto t : _tracks){
             if ( t->getSize() > maxSz) maxSz = t->getSize();

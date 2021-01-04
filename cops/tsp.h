@@ -37,11 +37,11 @@ namespace path{
 class CreateRandom : public onion::Creator< path_t >
 {
 public:
-    CreateRandom(size_t sz):
-        Creator< path_t >("CreateRandom"),_size(sz){}
+    CreateRandom(const problem_data_t& d):
+        Creator< path_t >("CreateRandom"),_data(d){}
     virtual path_t operator()(void);
 private:
-    size_t _size;
+    const problem_data_t& _data;
 };
 
 class CreateGreedy : public onion::Creator< path_t >
@@ -90,12 +90,14 @@ private:
     unsigned _length;
 };
 
-using Updater = min::Updater<path_t>;
+
 using Creator = Creator<path_t>;
 using Neighbor = Neighbor<path_t>;
 using CreatorCallsCounter = CreatorCallsCounter<path_t>;
 using ObjectiveCallsCounter = ObjectiveCallsCounter<path_t, problem_data_t>;
 using ObjectiveRecorder = ObjectiveRecorder<path_t,problem_data_t>;
+
+using Updater = min::Updater<path_t>;
 using UpdateRecorder = min::UpdateRecorder<path_t>;
 using UpdateLocalRecorder = min::UpdateLocalRecorder<path_t>;
 using UpdateStagnationCounter = min::UpdateStagnationCounter<path_t>;

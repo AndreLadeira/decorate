@@ -14,7 +14,7 @@ namespace onion{
 namespace cops{
 namespace mkp{
 
-using mkp_solution_t     = onion::array_of<bool>;
+using mkp_solution_t = onion::array_of<bool>;
 
 struct mkp_data_t
 {
@@ -132,13 +132,21 @@ private:
     const size_t _prstrat;
 };
 
+using Accept = max::Accept<unsigned>;
 using Accept1st = max::Accept1st<unsigned>;
-using Updater   = max::Updater<mkp_sol_t>;
+using AcceptBest = max::AcceptBest<unsigned>;
+using AcceptStagCounter = max::AcceptStagCounter<unsigned>;
 using CreatorCallsCounter = CreatorCallsCounter<mkp_sol_t>;
 using ObjectiveCallsCounter = ObjectiveCallsCounter<mkp_sol_t, mkp_data_t>;
 using ObjectiveRecorder = ObjectiveRecorder<mkp_sol_t, mkp_data_t>;
+
+using Updater = max::Updater<mkp_sol_t>;
 using UpdateRecorder = max::UpdateRecorder<mkp_sol_t>;
 using UpdateLocalRecorder = max::UpdateLocalRecorder<mkp_sol_t>;
+using UpdateStagnationCounter = max::UpdateStagnationCounter<mkp_sol_t>;
+using UpdateImprovementMeter = max::UpdateImprovementMeter<mkp_sol_t>;
+using UpdateResetObject = max::UpdateResetObject<mkp_sol_t>;
+
 using Creator = Creator<mkp_sol_t>;
 using Neighbor = Neighbor<mkp_sol_t>;
 

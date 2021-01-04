@@ -33,6 +33,11 @@ void ParameterList::clear(){
     _list.clear();
 }
 
+bool ParameterList::contains(string _key)
+{
+    return ( _list.find(_key) != _list.end() );
+}
+
 void ParameterLoader::operator()(istream& is, ParameterList& paramList)
 {
     paramList.clear();
@@ -41,12 +46,20 @@ void ParameterLoader::operator()(istream& is, ParameterList& paramList)
         std::string param;
         is >> param;
 
+        if ( param == "" ) continue;
+
         std::smatch match;
-        std::regex exp("([^=\\s\\t]+)=([^\\s\\t]+)");
+        std::regex exp;
+
+        exp.assign("([^=\\s\\t]+)*=([^\\s\\t]+)");
 
         if ( regex_search(param,match,exp) )
             paramList.set(match[1].str(), match[2].str());
+
+        exp.assign("^[^=]*$");
+
+        if ( regex_search(param,match,exp))
+             paramList.set(match[0].str(),"");
+
     }
-    if ( paramList("file_name").str() == "" )
-        throw runtime_error("ParameterLoader: mandatory <file_name> parameter missing");
 }

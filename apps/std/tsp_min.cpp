@@ -1,7 +1,3 @@
-/*
-#ifndef TSP_MIN_H
-#define TSP_MIN_H
-
 #include <iostream>
 #include <fstream>
 #include <thread>
@@ -21,45 +17,72 @@ using namespace onion::cops;
 using tsp::path::operator<<;
 using namespace tsp;
 
-int tsp_min(int argc, char* argv[])
+#ifdef __DEBUG__
+const char * const BUILDTYPE = "DEBUG";
+#else
+const char * const BUILDTYPE = "RELEASE";
+#endif
+
+void tsp_min(int argc, char* argv[])
 {
-    stringstream        ss;
+    stringstream        cmdline, strategy;
     ParameterList       parameters;
 
-    // parameters
+    //-----------------------------------------------------------------
+    //                      PARAMETERS
+    //-----------------------------------------------------------------
 
-    for(int i = 1; i < argc; i++ ) ss << argv[i] << " ";
+    for(int i = 1; i < argc; i++ ) cmdline << argv[i] << " ";
 
     Onion<ParameterLoader> loadParameters;
-    loadParameters.addLayer<mh::RRGAParametersChecker>();
-    loadParameters(ss,parameters);
+    //loadParameters.addLayer<mh::RRGAParametersChecker>();
+    loadParameters(cmdline,parameters);
 
-    // data file
+    //-----------------------------------------------------------------
+    //                      STRATEGY
+    //-----------------------------------------------------------------
+    tsp::problem_data_t data;
 
+    Onion< path::Creator >   create( make_shared<path::CreateGreedy >( data ) );
+    //Onion< path::Creator > create( make_shared<path::CreateRandom >( data.size() ) );
+
+    Onion< path::Neighbor > neighborhood( make_shared<path::RemoveReinsert >() );
+    //Onion< path::Neighbor > neighborhood( make_shared< path::_2opt >() );
+
+    Onion< path::Objective > objective( make_shared< path::tspObjective >( data ) );
+
+    Onion< tsp::Accept > accept( make_shared< tsp::Accept1st >() );
+    //Onion< tsp::Accept > accept( make_shared< tsp::AcceptBest >() );
+
+    //-----------------------------------------------------------------
+    //                     STRATEGY OUTPUT
+    //-----------------------------------------------------------------
+    strategy << create.core().getLabel() << "/"
+             << neighborhood.core().getLabel() << "/"
+             << accept.core().getLabel();
+
+    if ( parameters.contains("strategy") ){
+        std::cout<< "[I] - [TSP STRATEGY (" << BUILDTYPE << ")]: " << strategy.str() << endl;
+        return;
+    }
+    //-----------------------------------------------------------------
+    //                      DATA FILE
+    //-----------------------------------------------------------------
     ifstream file( parameters("file_name") );
     file.exceptions( istream::failbit | istream::badbit  );
-    auto data = cops::tsp::tsplibDataLoader()(file);
+    data = cops::tsp::tsplibDataLoader()(file);
     file.close();
 
-    // Loop Controller Onions
-
+    //-----------------------------------------------------------------
+    //                      LOOP CONTROLLERS & UPDATES
+    //-----------------------------------------------------------------
     Onion< LoopController > exploration_loop_controller     ( make_shared<LoopController>( parameters("explorations").as<unsigned>() ) );
     Onion< LoopController > intensification_loop_controller ( make_shared<LoopController>( parameters("intensifications").as<unsigned>() ) );
     Onion< LoopController > repetitions_loop_controller     ( make_shared<LoopController>( parameters("repetitions").as<unsigned>() ) );
 
-    // algorithm onions
-    //onion::reset_random_engine(0);
-    //Onion< path::Creator >              create      ( make_shared<path::CreateGreedy>( data ) );
-    Onion< path::Creator >              create      ( make_shared<path::CreateRandom>( data.size() ) );
-    //Onion< path::Neighbor >             neighborhood( make_shared<path::RemoveReinsert>() );
-    Onion< path::Neighbor >             neighborhood( make_shared< path::_2opt>() );
-    Onion< path::Objective >            objective   ( make_shared< path::tspObjective >( data ) );
-    //Onion< tsp::Accept >                accept      ( make_shared< tsp::Accept1st >() );
-    Onion< tsp::Accept >                accept      ( make_shared< tsp::AcceptBest >() );
-
-    Onion< path::Updater >              updateIntensification;
-    Onion< path::Updater >              updateExploration;
-    Onion< path::Updater >              updateRun;
+    Onion< path::Updater > updateIntensification;
+    Onion< path::Updater > updateExploration;
+    Onion< path::Updater > updateRun;
 
     //-----------------------------------------------------------------
     //                      Recorders
@@ -74,9 +97,9 @@ int tsp_min(int argc, char* argv[])
     //-----------------------------------------------------------------
     //                      Total Loop Counters
     //-----------------------------------------------------------------
-//    auto repLoopCountTotal = repetitions_loop_controller.addLayer< LoopCounter >();
-//    auto expLoopCountTotal = exploration_loop_controller.addLayer< LoopCounter >();
-//    auto intLoopCountTotal = intensification_loop_controller.addLayer< LoopCounter >();
+    auto repLoopCountTotal = repetitions_loop_controller.addLayer< LoopCounter >();
+    auto expLoopCountTotal = exploration_loop_controller.addLayer< LoopCounter >();
+    auto intLoopCountTotal = intensification_loop_controller.addLayer< LoopCounter >();
     //-----------------------------------------------------------------
     //                      Exploration Time
     //-----------------------------------------------------------------
@@ -95,7 +118,8 @@ int tsp_min(int argc, char* argv[])
     //                      Exp. Improvement Meter
     //-----------------------------------------------------------------
     auto improvement_meter = updateIntensification.addLayer< path::UpdateImprovementMeter >();
-    exploration_loop_controller.core().resetObject(*improvement_meter);
+    auto resetter = updateExploration.addLayer< path::UpdateResetObject >();
+    resetter->setObject(improvement_meter);
     Track<double> track_improv("Improvement", *improvement_meter );
     update_exp_recorder->addTrack(track_improv);
     //-----------------------------------------------------------------
@@ -106,12 +130,12 @@ int tsp_min(int argc, char* argv[])
     //-----------------------------------------------------------------
     //     Stop intens. at 1 stagnation when _2opt neighborhood is used
     //-----------------------------------------------------------------
-    auto stag_stop = StopCondition<>("Stagnations", *accept_stag_cnt, 1);
-    intensification_loop_controller.core().addStopCondition(stag_stop );
+    auto stag_stop = StopCondition<>("Stagnations", *accept_stag_cnt, 500);
+    intensification_loop_controller.core().addStopCondition(stag_stop,LoopController::ON_STOP::RESET);
     //-----------------------------------------------------------------
     //              Stop EXPS. at 1MM * reps objc. fcn. calls
     //-----------------------------------------------------------------
-    auto total_max_obj_fcn_calls = parameters("explorations").as<unsigned>() * unsigned(1e06);
+    auto total_max_obj_fcn_calls = parameters("obj_fcn_calls").as<unsigned>();
     auto obj_calls_stop_at_exp = StopCondition<>("Objective fcn calls", *objective_calls_at_exp, total_max_obj_fcn_calls );
     exploration_loop_controller.core().addStopCondition(obj_calls_stop_at_exp);
     //-----------------------------------------------------------------
@@ -130,7 +154,7 @@ int tsp_min(int argc, char* argv[])
     totalTimer.start();
 
     while( repetitions_loop_controller() )
-    {
+    {   
         onion::reset_random_engine();
 
         auto rep_best_path = create();
@@ -161,10 +185,7 @@ int tsp_min(int argc, char* argv[])
     cout<< endl;
     cout<< "File name (runs/exps./intens.)            : " << parameters("file_name").as<string>() << " (" << parameters("repetitions").as<unsigned>() << "/"
                                                           << parameters("explorations").as<unsigned>() << "/" << parameters("intensifications").as<unsigned>() << ")\n";
-
-    stringstream strategy;
-    strategy << create.core().getLabel() << "/" << neighborhood.core().getLabel() << "/" << accept.core().getLabel();
-    cout << strategy.str() << "\t";
+    cout << strategy.str() << "\n";
 
     cout<< "Stop Condition (run/exp./inten.)          : " << repetitions_loop_controller.core().getStopCondition() << " / "
                                                           << exploration_loop_controller.core().getStopCondition() << " / "
@@ -172,7 +193,7 @@ int tsp_min(int argc, char* argv[])
     cout<< "Total time                                : " << fixed << setprecision(2) << totalTimer.getValue() << " (s)\n";
     cout<< "Avg. time per run                         : " << fixed << setprecision(2) << totalTimer.getValue() / parameters("repetitions").as<unsigned>() << " (s)\n";
     cout<< "Obj. fcn. calls                           : " << objective_calls_total->getValue()  << "\n";
-    //cout<< "Total Runs/Explorations/Intensifications  : " << repLoopCountTotal->getValue() << " / " << expLoopCountTotal->getValue()<< " / " << intLoopCountTotal->getValue() << endl;
+    cout<< "Total Runs/Explorations/Intensifications  : " << repLoopCountTotal->getValue() << " / " << expLoopCountTotal->getValue()<< " / " << intLoopCountTotal->getValue() << endl;
 
     auto timeStats  = TrackStats<double>( track_exp_time );
     auto expStats   = TrackStats<unsigned>( update_exp_recorder.get()->getLocalTrack<unsigned>() );
@@ -186,8 +207,5 @@ int tsp_min(int argc, char* argv[])
     cout<< "Improvement  (all exps., min/max/avg)     : " << fixed << setprecision(1) << impStats.min() * 100.0 << " / " << impStats.max() * 100.0 << " / " << impStats.average() * 100.0 << " (%)\n";
     //cout<< "Stagnation   (only reps., min/max/avg)    : " << setprecision(0) << stgStats.min() << " / " << stgStats.max() << " / " << stgStats.average() << endl;
 
-    return 0;
+    return;
 }
-
-#endif // TSP_MIN_H
-*/

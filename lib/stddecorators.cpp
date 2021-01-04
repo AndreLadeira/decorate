@@ -5,7 +5,10 @@ using namespace onion;
 bool LoopTimer::operator()()
 {
     auto running = this->_next->operator()();
-    Timer::start();
+
+    if ( running ) Timer::start();
+    else Timer::stop();
+
     return running;
 }
 

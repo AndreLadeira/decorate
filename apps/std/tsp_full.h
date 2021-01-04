@@ -53,12 +53,13 @@ int tsp_full(int argc, char* argv[])
     // algorithm onions
 
     Onion< path::Creator >              create          ( make_shared<path::CreateRandom>( data.size() ) );
+    //Onion< path::Creator >              create          ( make_shared<path::CreateGreedy>( data ) );
 
     Onion< path::Neighbor >             neighborhood    ( make_shared<path::RemoveReinsert>() );
     //Onion< path::Neighbor >             neighborhood    ( make_shared< path::_2opt>() );
 
     Onion< path::Objective >            objective       ( make_shared< path::tspObjective >( data ) );
-    Onion< tsp::Accept1st >             accept;
+    Onion< tsp::Accept >                accept( make_shared< tsp::Accept1st >() );;
     Onion< path::Updater >              updateInt;
     Onion< path::Updater >              updateExp;
     Onion< path::Updater >              updateRun;

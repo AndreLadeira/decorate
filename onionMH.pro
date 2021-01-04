@@ -18,7 +18,12 @@ SOURCES += \
     lib/values.cpp \
     mh/rrga.cpp \
     mh/sian.cpp \
-    main.cpp
+    main.cpp \
+    apps/std/tsp_min.cpp \
+    apps/std/tsp_test.cpp \
+    cops/bmkfcns.cpp \
+    apps/std/bmf.cpp \
+    apps/std/bmf_test.cpp
 
 HEADERS += \
     apps/delta/tsp_min_d.h \
@@ -56,7 +61,10 @@ HEADERS += \
     apps/stagtest/tsp_st.h \
     apps/test_fcn.h \
     apps/std/test_fcn.h \
-    apps/std/tsp_test.h
+    apps/std/tsp_test.h \
+    apps/std/mkp_test.h \
+    cops/bmkfcns.h \
+    apps/std/apps.h
 
 CONFIG(debug, debug|release) {
     DEFINES += "__DEBUG__"

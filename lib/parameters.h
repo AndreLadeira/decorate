@@ -38,6 +38,7 @@ public:
 
     ParameterList() = default;
     Parameter operator()(std::string _key) const;
+    bool contains(std::string _key);
 
 protected:
 
@@ -54,7 +55,7 @@ private:
 class ParameterLoader : public NonCopyable, public LabeledObject
 {
 public:
-    ParameterLoader(const char * const& name = "ParameterLoader" ):LabeledObject(name){}
+    ParameterLoader(const char * const& name = "Parameter Loader"):LabeledObject(name){}
     virtual ~ParameterLoader() = default;
 
     virtual void operator()(std::istream& is, ParameterList& paramList);

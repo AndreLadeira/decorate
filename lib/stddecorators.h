@@ -214,17 +214,18 @@ public:
                         const cost_t candidateCost )
     {
         if (this->getValue() == 0 ){
-            upcost = bsfCost;
+            startcost = bsfCost;
         }
 
         auto result = (*this->_next)(bestSoFar,bsfCost,candidate, candidateCost);
-        if (result) this->setValue( std::abs( static_cast<double>(upcost) - candidateCost) / upcost );
+        const auto abs_startcost = std::abs( static_cast<long>(startcost) );
+        if (result) this->setValue( static_cast<double>( std::abs( static_cast<long>(startcost - candidateCost) ) ) / abs_startcost );
         return result;
     }
 
 private:
 
-    cost_t upcost;
+    cost_t startcost;
 
 };
 

@@ -727,6 +727,53 @@ private:
 }
 
 
+template< typename solution_t,
+          typename cost_t,
+          typename Compare<cost_t>::compare_fcn_t c>
+class UpdateLDRecorder :
+        public Updater<solution_t,cost_t, c>,
+        public Recorder,
+        public OnionLayer<Updater<solution_t,cost_t,c>>
+{
+public:
+    using OnionLayerBase = OnionLayer<Updater<solution_t,cost_t,c>>;
+    using Updater = Updater<solution_t,cost_t, c>;
+
+    UpdateLDRecorder(typename OnionLayerBase::core_ptr_t next, unsigned regularity = 1):
+        Updater("Local Data Recorder"),
+        Recorder(regularity),OnionLayerBase(next),
+        _candidate_cost(0),_bsf_cost(0),
+        _candidate_tr("ULR.candidate", _candidate_cost  ),
+        _bsf_tr("ULR.bsf", _bsf_cost  )
+    {
+        //this->addTrack ( _local_tr );
+    }
+
+    virtual bool operator()(solution_t& bestSoFar,
+                        cost_t& bsfCost,
+                        const solution_t& candidate,
+                        const cost_t candidateCost )
+    {
+        auto result = (*this->_next)(bestSoFar,bsfCost,candidate, candidateCost);
+        _candidate_cost.setValue(candidateCost);
+        this->record();
+        return result;
+    }
+
+    template<class T>
+    Track<T> getLocalTrack(){
+        return this->template getTrack<T>("local");
+    }
+
+private:
+
+    Value<cost_t> _candidate_cost;
+    Value<cost_t> _bsf_cost;
+    MultiTrack<cost_t> _candidate_tr;
+    MultiTrack<cost_t> _bsf_tr;
+};
+
+
 #endif // VALUES_H
 
 

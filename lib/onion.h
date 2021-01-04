@@ -6,6 +6,7 @@
 #include <type_traits>
 #include <string>
 
+
 namespace onion{
 
 template <class CoreType>
@@ -78,14 +79,14 @@ public:
 
     }
 
-    template<class LayerType, class LayerParamType>
-    std::shared_ptr<LayerType> addLayer(LayerParamType& p){
+//    template<class LayerType, class LayerParamType>
+//    std::shared_ptr<LayerType> addLayer(LayerParamType& p){
 
-        auto newlayer = std::make_shared<LayerType>(_outerLayer)(p);
-        _outerLayer = newlayer;
-        return newlayer;
+//        auto newlayer = std::make_shared<LayerType>(_outerLayer)(p);
+//        _outerLayer = newlayer;
+//        return newlayer;
 
-    }
+//    }
 
     template<class LayerType, class LayerParamType>
     std::shared_ptr<LayerType> addLayer(LayerParamType p){

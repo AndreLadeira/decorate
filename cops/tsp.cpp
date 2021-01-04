@@ -175,7 +175,7 @@ catch(istream::failure& ){
 
 path_t path::CreateRandom::operator()()
 {
-    path_t path(_size+1);
+    path_t path(_data.size()+1);
     // create a random path
 
     std::iota(path.begin(),path.end()-1,0);
