@@ -92,9 +92,9 @@ std::vector<size_t> OrderByFcn(const mkp_data_t& data,
 
 std::vector<size_t> OrderByProfit(const mkp_data_t& data,
                                      compare_fcn_ptr cfptr = ui_greater){
-    return OrderByFcn(data, []( const mkp_data_t& d, unsigned& i )
+    return OrderByFcn(data, []( const mkp_data_t& d, unsigned& prod )
     {
-        return static_cast<double>(d._profits[i]);
+        return static_cast<double>(d._profits[prod]);
     }, cfptr );
 }
 
@@ -245,7 +245,7 @@ Objective::cost_type mkpObjective::operator()(const mkp_sol_t & s)
 const std::vector<unsigned>& getResourceUsage(const mkp_data_t &d, const mkp_sol_t& s){
     const auto products = d._products;
     const auto dimensions = d._dimensions;
-    static std::vector<unsigned> sum(dimensions,0);
+    static std::vector<unsigned> sum(dimensions);
 
     for(unsigned dim = 0; dim < dimensions; dim++){
         sum.at(dim) = 0;
@@ -273,8 +273,8 @@ InsertRepair::operator()(const mkp_sol_t &s)
     static const auto&                  rev_utility_index   = OrderStrategies[_prstrat](_data, ui_less );
     static const auto&                  utility_index       = OrderStrategies[_prstrat](_data, ui_greater);
     static const unsigned               maxp                = products-1;
-    static std::vector<int>             delta_r(dimensions,0);
-    static std::vector<mkp_sol_t>       newsol(1, mkp_sol_t(products,false) );
+    static std::vector<int>             delta_r(dimensions);
+    static std::vector<mkp_sol_t>       newsol(1);
 
     unsigned newProdIndex = onion::rand_between(0,maxp);
     while( s.at(newProdIndex) )
@@ -332,4 +332,9 @@ InsertRepair::operator()(const mkp_sol_t &s)
 #endif
 
     return newsol;
+}
+
+std::string onion::cops::mkp::ProductRankStrategyStr(ProductRankStrategy prs){
+    static const char * const _rank_strategy_str[5] = {"Default", "ByProfit", "Random", "P2TWR", "P2WIR"};
+    return _rank_strategy_str[static_cast<int>(prs)];
 }

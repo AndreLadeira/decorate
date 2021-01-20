@@ -3,10 +3,14 @@
 
 using namespace onion::cops::bmf;
 
+namespace{
+const unsigned RES_RANGE_FRAC = 500;
+}
+
 Range onion::cops::bmf::linear_decay(const Range &range, unsigned loop, unsigned maxloops){
 
-    static const auto basemin = range.min / 500;
-    static const auto basemax = range.max / 500;
+    static const auto basemin = range.min / RES_RANGE_FRAC;
+    static const auto basemax = range.max / RES_RANGE_FRAC;
 
     return
     {
@@ -17,8 +21,8 @@ Range onion::cops::bmf::linear_decay(const Range &range, unsigned loop, unsigned
 
 Range onion::cops::bmf::exp_decay(const Range &range, unsigned loop, unsigned maxloops){
 
-    static const auto basemin = range.min / 500;
-    static const auto basemax = range.max / 500;
+    static const auto basemin = range.min / RES_RANGE_FRAC;
+    static const auto basemax = range.max / RES_RANGE_FRAC;
 
     double f = 1 - std::tanh(5*loop/maxloops);
 
@@ -32,8 +36,8 @@ Range onion::cops::bmf::exp_decay(const Range &range, unsigned loop, unsigned ma
 
 Range onion::cops::bmf::cos_decay(const Range &range, unsigned loop, unsigned maxloops){
 
-    static const auto basemin = range.min / 500;
-    static const auto basemax = range.max / 500;
+    static const auto basemin = range.min / RES_RANGE_FRAC;
+    static const auto basemax = range.max / RES_RANGE_FRAC;
     static const auto p = M_PI / 2 / maxloops;
 
     double f = std::pow( std::cos( p * loop ), 4.0 );

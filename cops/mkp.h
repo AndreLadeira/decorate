@@ -112,8 +112,10 @@ public:
 };
 
 enum class ProductRankStrategy : size_t {
-    DEFAULT,PROFIT,RANDOM, P2TW, P2WI
+    DEFAULT,PROFIT,RANDOM, P2TWR, P2WIR
 };
+
+std::string ProductRankStrategyStr(ProductRankStrategy prs);
 
 //-----------------------------------------------------------------
 //                  NEIGHBORHOOD
@@ -121,10 +123,9 @@ enum class ProductRankStrategy : size_t {
 
 class InsertRepair : public onion::Neighbor<mkp_sol_t>{
 public:
-    InsertRepair(const mkp_data_t& d,
-                 ProductRankStrategy prstrat = ProductRankStrategy::DEFAULT):
-        Neighbor<mkp_sol_t>("InsertRepair"),_data(d),_prstrat( static_cast<size_t>(prstrat)){
-
+    InsertRepair(const mkp_data_t& d, ProductRankStrategy prstrat = ProductRankStrategy::DEFAULT):
+        Neighbor<mkp_sol_t>( std::string("InsertRepair-") + ProductRankStrategyStr(prstrat) ),
+        _data(d),_prstrat( static_cast<size_t>(prstrat)){
     }
     std::vector<mkp_sol_t> operator()(const mkp_sol_t&);
 private:

@@ -35,6 +35,10 @@ inline double f1(double x){
 inline double f8(double x){
     return -x * std::sin( std::sqrt( std::abs(x) ) );
 }
+const double M_2PI = 2 * M_PI;
+inline double f9(double x){
+    return x*x - 10.0 * std::cos( M_2PI * x ) + 10.0;
+}
 
 template <unsigned S>
 double sum_fcn( const solution_t<S>& x, bmk_fcn_t f ){
@@ -103,7 +107,7 @@ public:
 
     std::vector< solution_t<S> > operator()(const solution_t<S>& s)
     {
-        static std::vector< solution_t<S> > N(30, solution_t<S>() );
+        static std::vector< solution_t<S> > N(S, solution_t<S>() );
         static const double wid = _range.max - _range.min;
 
         unsigned i = 0;
@@ -145,7 +149,7 @@ public:
 
     std::vector< solution_t<S> > operator()(const solution_t<S>& s)
     {
-        static std::vector< solution_t<S> > N(30, solution_t<S>() );
+        static std::vector< solution_t<S> > N(S, solution_t<S>() );
         const auto r = _decay_fcn(_range,_current_loop,_maxloops);
         const auto wid = r.max-r.min;
 
@@ -201,6 +205,9 @@ using UpdateRecorder = min::UpdateRecorder<solution_t<S>,double>;
 
 template<unsigned S>
 using UpdateLocalRecorder = min::UpdateLocalRecorder<solution_t<S>,double>;
+
+template<unsigned S>
+using UpdateBestSolRecorder = min::UpdateBestMTRecorder<solution_t<S>,double>;
 
 template<unsigned S>
 using UpdateStagnationCounter = min::UpdateStagnationCounter<solution_t<S>,double>;

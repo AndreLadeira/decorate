@@ -334,7 +334,7 @@ std::vector<path_t> _2opt::operator()(const path_t &path)
 
     static std::vector<path_t> result( (n-1)*(n-2)/2, path_t(n,0));
 
-    // BI-CLASSIC impl. from Hansen, Mladenovic, 2006
+    // BestImprovement (BI)-CLASSIC impl. from Hansen, Mladenovic, 2006
 
     size_t count = 0;
     for (unsigned i = 1; i < n - 1 ; i++){
@@ -399,7 +399,7 @@ std::vector<path_t> RemoveReinsert::operator()(const path_t &path)
     // l=3 s = 3
     // mask = DEF
     //        01234
-    // rest = ABCGA ABC + GA
+    // rest = ABCGA = ABC + GA
     for(unsigned pos = 1; pos < rest.size(); ++pos)
     {
         if ( pos == start ) continue;
