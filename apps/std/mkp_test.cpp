@@ -4,17 +4,18 @@
 #include <chrono>
 #include <iomanip> // setprecision
 #include <cassert>
+#include <clocale>
 
 #include "lib/onionmh.h"
 #include "mh/rrga.h"
 #include "lib/stddecorators.h"
 #include "lib/trackutil.h"
-#include "cops/bmkfcns.h"
+#include "cops/mkp.h"
 
 using namespace std;
 using namespace onion;
 using namespace onion::cops;
-using namespace bmf;
+using namespace mkp;
 
 #ifdef __DEBUG__
 const char * const BUILDTYPE = "DEBUG";
@@ -22,7 +23,7 @@ const char * const BUILDTYPE = "DEBUG";
 const char * const BUILDTYPE = "RELEASE";
 #endif
 
-void bmf_test(int argc, char* argv[])
+void mkp_test(int argc, char* argv[])
 {
     stringstream        cmdline, strategy;
     ParameterList       parameters;
@@ -30,26 +31,38 @@ void bmf_test(int argc, char* argv[])
     //-----------------------------------------------------------------
     //                      PARAMETERS
     //-----------------------------------------------------------------
-
     for(int i = 1; i < argc; i++ ) cmdline << argv[i] << " ";
 
     Onion<ParameterLoader> loadParameters;
+    //loadParameters.addLayer<mh::RRGAParametersChecker>();
+
     loadParameters(cmdline,parameters);
 
     //-----------------------------------------------------------------
+    //         RANDON NUMBER GEN RESET USING MILLISECONDS SEED
+    //-----------------------------------------------------------------
+    onion::reset_random_engine();
+
+    ///-----------------------------------------------------------------
     //                      STRATEGY
     //-----------------------------------------------------------------
-    bmf::Range range = {-500,500};
-    const unsigned S = 30;
+    mkp::mkp_data_t data;
+    //Onion< mkp::Creator > create  ( make_shared<mkp::CreateByItemOrder >( data ) );
+    //Onion< mkp::Creator > create  ( make_shared<mkp::CreateByItemProfit>( data ) );
+    Onion< mkp::Creator > create  ( make_shared<mkp::CreateRandom>( data ) );
+    //Onion< mkp::Creator > create  ( make_shared<mkp::CreateByItemUtilityTW2CR>( data ) );
+    //Onion< mkp::Creator > create  ( make_shared<mkp::CreateByItemUtilityWI2CR>( data ) );
 
-    Onion< bmf::Creator<S> >   create( make_shared< bmf::CreateRandom<S> >( range ) );
+    //Onion< mkp::Neighbor >      neighborhood ( make_shared<mkp::InsertRepair>( data, ProductRankStrategy::DEFAULT ) );
+    //Onion< mkp::Neighbor >      neighborhood ( make_shared<mkp::InsertRepair>( data, ProductRankStrategy::PROFIT ) );
+    //Onion< mkp::Neighbor > neighborhood ( make_shared<mkp::InsertRepair>( data, ProductRankStrategy::RANDOM ) );
+    //Onion< mkp::Neighbor >      neighborhood ( make_shared<mkp::InsertRepair>( data, ProductRankStrategy::P2TWR ) );
+    Onion< mkp::Neighbor >      neighborhood ( make_shared<mkp::InsertRepair>( data, ProductRankStrategy::P2WIR ) );
 
-    Onion< bmf::Neighbor<S> > neighborhood( make_shared< bmf::RandomNeighbor<S> >( range ) );
+    Onion< mkp::Objective >     objective( make_shared< mkp::mkpObjective >( data ) );
 
-    Onion< bmf::Objective<S> > objective( make_shared< bmf::bmfObjective<S> >( bmf::f9 ) );
-
-    //Onion< bmf::Accept > accept( make_shared< bmf::Accept1st >() );
-    Onion< bmf::Accept > accept( make_shared< bmf::AcceptBest >() );
+    Onion< mkp::Accept >        accept( make_shared< mkp::Accept1st >() );
+    //Onion< mkp::Accept >        accept( make_shared< mkp::AcceptBest >() );
 
     //-----------------------------------------------------------------
     //                     STRATEGY OUTPUT
@@ -62,30 +75,40 @@ void bmf_test(int argc, char* argv[])
         std::cout<< "[I] - [TSP STRATEGY (" << BUILDTYPE << ")]: " << strategy.str() << endl;
         return;
     }
+    //-----------------------------------------------------------------
+    //                      DATA FILE
+    //-----------------------------------------------------------------
+    ifstream file( parameters("file_name") );
+    file.exceptions( istream::failbit | istream::badbit  );
+    data = cops::mkp::mkp_datDataLoader()(file);
+    file.close();
 
-
+    auto fname          = parameters("file_name").as<string>();
+    const auto start    = fname.find_last_of("/") + 1;
+    const auto end      = fname.find_last_of(".");
+    fname               = fname.substr( start,  end-start );
     //-----------------------------------------------------------------
     //                      LOOP CONTROLLERS & UPDATES
     //-----------------------------------------------------------------
+
     Onion< LoopController > exploration_loop_controller     ( make_shared<LoopController>( parameters("explorations").as<unsigned>() ) );
     Onion< LoopController > intensification_loop_controller ( make_shared<LoopController>( parameters("intensifications").as<unsigned>() ) );
-    Onion< bmf::Updater<S> >  updateIntensification;
-    Onion< bmf::Updater<S> >  updateExploration;
-
+    Onion< mkp::Updater >  updateIntensification;
+    Onion< mkp::Updater >  updateExploration;
     //-----------------------------------------------------------------
     //                      Recorders
     //-----------------------------------------------------------------
-    auto update_exp_recorder        = updateExploration.addLayer< bmf::UpdateLocalRecorder<S> >();
+    auto update_exp_recorder    = updateExploration.addLayer< mkp::UpdateLocalRecorder >();
     //-----------------------------------------------------------------
     //                      Total Obj. Fcn Calls
     //-----------------------------------------------------------------
-    auto objective_calls_total  = objective.addLayer< bmf::ObjectiveCallsCounter<S> >();
-    auto objective_calls_at_exp = objective.addLayer< bmf::ObjectiveCallsCounter<S> >();
+    auto objective_calls_total  = objective.addLayer< mkp::ObjectiveCallsCounter >();
+    auto objective_calls_at_exp = objective.addLayer< mkp::ObjectiveCallsCounter >();
     //-----------------------------------------------------------------
     //                      Total Loop Counters
     //-----------------------------------------------------------------
-    auto expLoopCountTotal = exploration_loop_controller.addLayer< LoopCounter >();
-    auto intLoopCountTotal = intensification_loop_controller.addLayer< LoopCounter >();
+//    auto expLoopCountTotal = exploration_loop_controller.addLayer< LoopCounter >();
+//    auto intLoopCountTotal = intensification_loop_controller.addLayer< LoopCounter >();
     //-----------------------------------------------------------------
     //                      Exploration Time
     //-----------------------------------------------------------------
@@ -95,7 +118,7 @@ void bmf_test(int argc, char* argv[])
     //-----------------------------------------------------------------
     //                      Stag. Counter
     //-----------------------------------------------------------------
-    auto accept_stag_cnt = accept.addLayer< bmf::AcceptStagCounter >();
+//    auto accept_stag_cnt = accept.addLayer< tsp::AcceptStagCounter >();
 //    Track<unsigned> track_stag_exp("stag. count", *accept_stag_cnt );
 //    update_exp_recorder->addTrack(track_stag_exp);
 //    exploration_loop_controller.core().resetObject( *accept_stag_cnt );
@@ -103,48 +126,28 @@ void bmf_test(int argc, char* argv[])
     //-----------------------------------------------------------------
     //                      Exp. Improvement Meter
     //-----------------------------------------------------------------
-    auto improvement_meter = updateIntensification.addLayer< bmf::UpdateImprovementMeter<S> >();
-    auto resetter = updateExploration.addLayer< bmf::UpdateResetObject<S> >();
+    auto improvement_meter = updateIntensification.addLayer< mkp::UpdateImprovementMeter >();
+    auto resetter = updateExploration.addLayer< mkp::UpdateResetObject >();
     resetter->setObject(improvement_meter);
     Track<double> track_improv("Improvement", *improvement_meter );
     update_exp_recorder->addTrack(track_improv);
+
     //-----------------------------------------------------------------
     //              Stop intens. at 1MM objc. fcn. calls
     //-----------------------------------------------------------------
-    //auto int_obj_calls_stop = StopCondition<>("Objective fcn calls", *objective_calls_at_exp, parameters("objfcncalls").as<unsigned>() );
-    //intensification_loop_controller.core().addStopCondition(int_obj_calls_stop, LoopController::ON_STOP::RESET );
-    //-----------------------------------------------------------------
-    //     Stop INTENSIFICATIONS
-    //     2 - By Total number of objective fcn calls
-    //
-    //-----------------------------------------------------------------
-    auto total_max_obj_fcn_calls = parameters("obj_fcn_calls").as<unsigned>();
-    auto obj_calls_stop_at_int   = StopCondition<>("Objective fcn calls",
-                                                 *objective_calls_at_exp,
-                                                 total_max_obj_fcn_calls );
-    intensification_loop_controller.core().addStopCondition(obj_calls_stop_at_int);
-    //-----------------------------------------------------------------
-    //     Stop EXPLORATIONS
-    //     1 - By Total number of objective fcn calls
-    //-----------------------------------------------------------------
-    auto obj_calls_stop_at_exp = StopCondition<>("Objective fcn calls",
-                                                 *objective_calls_at_exp,
-                                                 total_max_obj_fcn_calls );
-    exploration_loop_controller.core().addStopCondition(obj_calls_stop_at_exp);
-    //-----------------------------------------------------------------
-    //              Start timer & recorders
-    //-----------------------------------------------------------------
-    Timer totalTimer;
-    totalTimer.start();
+    auto int_obj_calls_stop = StopCondition<>("Objective fcn calls", *objective_calls_at_exp, parameters("objfcncalls").as<unsigned>() );
+    intensification_loop_controller.core().addStopCondition(int_obj_calls_stop, LoopController::ON_STOP::RESET );
+
     update_exp_recorder->start();
-    //-----------------------------------------------------------------
-    //             best solution, best cost
-    //-----------------------------------------------------------------
-    auto best_s = create();
-    auto best_c = objective(best_s);
+
+    Timer   totalTimer;
+    totalTimer.start();
+    auto best_oa = create();
+    auto cost_oa = objective(best_oa);
 
     while( exploration_loop_controller() )
     {
+        onion::reset_random_engine();
         auto exp_s = create();
         auto exp_c = objective( exp_s );
 
@@ -160,22 +163,31 @@ void bmf_test(int argc, char* argv[])
                             newcost.at(accepted.index())
                             );
         }
-        updateExploration(best_s,best_c,exp_s,exp_c);
+        updateExploration(best_oa,cost_oa,exp_s,exp_c);
     }
 
     totalTimer.stop();
 
+//    auto fname = parameters("file_name").as<string>();
+//    fname = fname.substr( fname.find_last_of("/") + 1 );
+
+
     auto timeStats  = TrackStats<double>( track_exp_time );
-    auto expStats   = TrackStats<double>( update_exp_recorder.get()->getLocalTrack<double>() );
+    auto expStats   = TrackStats<unsigned>( update_exp_recorder.get()->getLocalTrack<unsigned>() );
     auto impStats   = TrackStats<double>( track_improv );
 
+    cout << fname << "\t";
     cout << strategy.str() << "\t";
-    cout << expLoopCountTotal->getValue()<< "/" << intLoopCountTotal->getValue() << "\t";
+    cout << parameters("explorations").as<unsigned>() << "\t";
     cout << objective_calls_total->getValue() << "\t";
     cout << fixed << setprecision(2) << totalTimer.getValue() << "\t";
     cout << fixed << setprecision(4) << timeStats << "\t";
-    cout << fixed << setprecision(2) << expStats << "\t";
+    cout << fixed << setprecision(0) << expStats << "\t";
     cout << fixed << setprecision(4) << impStats << "\t\n";
+
+#ifdef __DEBUG__
+    assert( objective( best_oa ) == expStats.max() );
+#endif
 
     return;
 }

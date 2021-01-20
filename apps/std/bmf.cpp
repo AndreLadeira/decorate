@@ -40,7 +40,7 @@ void bmf_full(int argc, char* argv[])
     //-----------------------------------------------------------------
 
     bmf::Range range = {-500,500};
-    const unsigned S = 30;
+    const unsigned S = 2;
 
     //-----------------------------------------------------------------
     //                      LOOP CONTROLLERS & UPDATES
@@ -52,19 +52,17 @@ void bmf_full(int argc, char* argv[])
     //-----------------------------------------------------------------
     //                      STRATEGY
     //-----------------------------------------------------------------
-
-
     Onion< bmf::Creator<S> > create( make_shared< bmf::CreateRandom<S> >( range ) );
 
-   // Onion< bmf::Neighbor<S> > neighborhood( make_shared< bmf::RandomNeighbor<S> >( range ) );
+//    Onion< bmf::Neighbor<S> > neighborhood( make_shared< bmf::RandomNeighbor<S> >( range ) );
+//    Onion< bmf::Neighbor<S> > neighborhood( make_shared< bmf::RandomDecreasingRangeNeighbor<S> >(
+//                                                range,parameters("intensifications").as<unsigned>() ) ); // linear decay
+
     Onion< bmf::Neighbor<S> > neighborhood( make_shared< bmf::RandomDecreasingRangeNeighbor<S> >(
-                                                range,parameters("intensifications").as<unsigned>() ) ); // linear decay
+                                                range,parameters("intensifications").as<unsigned>() , bmf::exp_decay ) );// fast exp decay
 
 //    Onion< bmf::Neighbor<S> > neighborhood( make_shared< bmf::RandomDecreasingRangeNeighbor<S> >(
-//                                                range,parameters("intensifications").as<unsigned>() , bmf::exp_decay ) );// exp decay
-
-//    Onion< bmf::Neighbor<S> > neighborhood( make_shared< bmf::RandomDecreasingRangeNeighbor<S> >(
-//                                                range,parameters("intensifications").as<unsigned>() , bmf::cos_decay ) ); // exp decay
+//                                                range,parameters("intensifications").as<unsigned>() , bmf::cos_decay ) ); // slow exp decay
 
     intensification_loop_controller.core().resetObject( dynamic_cast<onion::AResettable&>( neighborhood.core() ) );
 
@@ -73,7 +71,6 @@ void bmf_full(int argc, char* argv[])
 
     //Onion< bmf::Accept > accept( make_shared< bmf::Accept1st >() );
     Onion< bmf::Accept > accept( make_shared< bmf::AcceptBest >() );
-
     //-----------------------------------------------------------------
     //                     STRATEGY OUTPUT
     //-----------------------------------------------------------------
@@ -89,9 +86,11 @@ void bmf_full(int argc, char* argv[])
     //-----------------------------------------------------------------
     //                      Recorders
     //-----------------------------------------------------------------
-    auto update_exp_recorder        = updateExploration.addLayer< bmf::UpdateLocalRecorder<S> >();
-    auto regularity                 = parameters("intensifications").as<unsigned>() / 10;
-    auto intensification_loop_rec   = intensification_loop_controller.addLayer< LoopRecorder >( regularity );
+    //auto update_exp_recorder        = updateExploration.addLayer< bmf::UpdateLocalRecorder<S> >();
+    auto regularity                     = parameters("intensifications").as<unsigned>() / 10;
+    auto intensification_loop_rec       = intensification_loop_controller.addLayer< LoopRecorder >( regularity  );
+    auto update_int_bestsol_recorder    = updateIntensification.addLayer< bmf::UpdateBestSolRecorder<S> >();
+    intensification_loop_controller.core().resetObject(*update_int_bestsol_recorder);
     //-----------------------------------------------------------------
     //                      Total Obj. Fcn Calls
     //-----------------------------------------------------------------
@@ -105,13 +104,13 @@ void bmf_full(int argc, char* argv[])
     //-----------------------------------------------------------------
     //                      Exploration Time
     //-----------------------------------------------------------------
-    auto exploration_timer = exploration_loop_controller.addLayer< LoopTimer >();
-    Track<double> track_exp_time("exp. time", *exploration_timer );
-    update_exp_recorder->addTrack(track_exp_time);
+//    auto exploration_timer = exploration_loop_controller.addLayer< LoopTimer >();
+//    Track<double> track_exp_time("exp. time", *exploration_timer );
+//    update_exp_recorder->addTrack(track_exp_time);
     //-----------------------------------------------------------------
     //                      Stag. Counter
     //-----------------------------------------------------------------
-    auto accept_stag_cnt = accept.addLayer< bmf::AcceptStagCounter >();
+    //auto accept_stag_cnt = accept.addLayer< bmf::AcceptStagCounter >();
 //    Track<unsigned> track_stag_exp("stag. count", *accept_stag_cnt );
 //    update_exp_recorder->addTrack(track_stag_exp);
 //    exploration_loop_controller.core().resetObject( *accept_stag_cnt );
@@ -119,11 +118,11 @@ void bmf_full(int argc, char* argv[])
     //-----------------------------------------------------------------
     //                      Exp. Improvement Meter
     //-----------------------------------------------------------------
-    auto improvement_meter = updateIntensification.addLayer< bmf::UpdateImprovementMeter<S> >();
-    auto resetter = updateExploration.addLayer< bmf::UpdateResetObject<S> >();
-    resetter->setObject(improvement_meter);
-    Track<double> track_improv("Improvement", *improvement_meter );
-    update_exp_recorder->addTrack(track_improv);
+//    auto improvement_meter = updateIntensification.addLayer< bmf::UpdateImprovementMeter<S> >();
+//    auto resetter = updateExploration.addLayer< bmf::UpdateResetObject<S> >();
+//    resetter->setObject(improvement_meter);
+//    Track<double> track_improv("Improvement", *improvement_meter );
+//    update_exp_recorder->addTrack(track_improv);
 
     //-----------------------------------------------------------------
     //              Stop intens. at 1MM objc. fcn. calls
@@ -161,10 +160,10 @@ void bmf_full(int argc, char* argv[])
     //              Multi-Tracks
     //-----------------------------------------------------------------
     MultiTrack<double>      mtrack_exp_cost        ("exp. cost",        (onion::RefValue<double>(exp_c) ),  intensification_loop_controller.core() );
-    MultiTrack<double>      mtrack_exp_time        ("exp. time",        *exploration_timer,                 intensification_loop_controller.core() );
+    //MultiTrack<double>      mtrack_exp_time        ("exp. time",        *exploration_timer,                 intensification_loop_controller.core() );
     MultiTrack<unsigned>    mtrack_obj_fcn_calls   ("obj. fcn. calls",  *objective_calls_at_exp,            intensification_loop_controller.core() );
     intensification_loop_rec->addTrack(mtrack_exp_cost);
-    intensification_loop_rec->addTrack(mtrack_exp_time);
+    //intensification_loop_rec->addTrack(mtrack_exp_time);
     intensification_loop_rec->addTrack(mtrack_obj_fcn_calls);
     intensification_loop_controller.core().resetObject(*objective_calls_at_exp);
     //-----------------------------------------------------------------
@@ -172,7 +171,8 @@ void bmf_full(int argc, char* argv[])
     //-----------------------------------------------------------------
     Timer totalTimer;
     totalTimer.start();
-    update_exp_recorder->start();
+    //update_exp_recorder->start();
+    update_int_bestsol_recorder->start();
     intensification_loop_rec->start();
 
     while( exploration_loop_controller() )
@@ -214,11 +214,18 @@ void bmf_full(int argc, char* argv[])
     std::iota(exps.begin(),exps.end(),0);
     for(auto& v : exps ) v *= regularity;
 
-    printer << TrackPrinter::track<unsigned>("exploration",exps) //<< mtrack_exp_time
-            << mtrack_exp_cost ;//<< mtrack_obj_fcn_calls;
+    printer << TrackPrinter::track<unsigned>("exploration",exps)
+            //<< TrackPrinter::trackManip<unsigned>( mtrack_obj_fcn_calls, TrackPrinter::trackManip<unsigned>::MANIP::MAX )  //<< mtrack_exp_time
+            << mtrack_exp_cost ;
+    cout << fixed << std::setprecision(8);
     printer.print(cout);
 
     cout<< endl;
 
+
+    for(const auto & pt : update_int_bestsol_recorder->getLocalTrack().getTrack(0)){
+        cout << pt[0] << "\t" << pt[1] << endl;
+    }
+    cout<< endl;
     return;
 }

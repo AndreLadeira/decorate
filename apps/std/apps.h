@@ -11,5 +11,6 @@ void tsp_min(int argc, char* argv[]);
 void tsp_test(int argc, char* argv[]);
 void bmf_test(int argc, char* argv[]);
 void bmf_full(int argc, char* argv[]);
+void mkp_test(int argc, char* argv[]);
 
 #endif // TESTS_H

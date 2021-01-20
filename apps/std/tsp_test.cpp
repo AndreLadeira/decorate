@@ -23,24 +23,25 @@ const char * const BUILDTYPE = "DEBUG";
 const char * const BUILDTYPE = "RELEASE";
 #endif
 
-unsigned getStagLimit(size_t data_sz, unsigned obj_fcn_calls_limit){
-    auto n = static_cast<unsigned>(data_sz - 2);
-    auto limit = n*(n-1)/2;
+//unsigned getStagLimit(size_t data_sz, unsigned obj_fcn_calls_limit){
+//      auto n = static_cast<unsigned>(data_sz - 2);
+////    auto limit = n*(n-1)/2;
 
-    // average neighbors per loop (remove reinsert)
-    auto anpl = std::ceil( n /2.0 );
+////    // average neighbors per loop (remove reinsert)
+////    auto anpl = std::ceil( n /2.0 );
 
-    // upper limit on the number of loops
-    auto loops = std::floor(obj_fcn_calls_limit / anpl);
+////    // upper limit on the number of loops
+////    auto loops = std::floor(obj_fcn_calls_limit / anpl);
 
-    // limit to at least 30 restarts
-    auto looplimit = static_cast<unsigned> (loops/15.0);
+////    // limit to at least 15 restarts
+////    auto looplimit = static_cast<unsigned> (loops/15.0);
 
-    if ( limit < looplimit )
-        return limit;
-    else
-        return looplimit;
-}
+////    if ( limit < looplimit )
+////        return limit;
+////    else
+////        return looplimit;
+//    return 1000 * 1000;
+//}
 
 void tsp_test(int argc, char* argv[])
 {
@@ -110,8 +111,11 @@ void tsp_test(int argc, char* argv[])
     //-----------------------------------------------------------------
     //                      LOOP CONTROLLERS & UPDATES
     //-----------------------------------------------------------------
-    Onion< LoopController > exploration_loop_controller     ( make_shared<LoopController>( parameters("explorations").as<unsigned>() ) );
-    Onion< LoopController > intensification_loop_controller ( make_shared<LoopController>( parameters("intensifications").as<unsigned>() ) );
+    unsigned exps = parameters("explorations").str() == "auto" ? 0 : parameters("explorations").as<unsigned>();
+    unsigned ints = parameters("intensifications").str() == "auto" ? static_cast<unsigned>(data.size() * 100) : parameters("intensifications").as<unsigned>();
+
+    Onion< LoopController > exploration_loop_controller     ( make_shared<LoopController>( exps ) );
+    Onion< LoopController > intensification_loop_controller ( make_shared<LoopController>( ints ) );
     Onion< path::Updater >  updateIntensification;
     Onion< path::Updater >  updateExploration;
 
@@ -163,16 +167,17 @@ void tsp_test(int argc, char* argv[])
     //-----------------------------------------------------------------
     auto total_max_obj_fcn_calls = parameters("obj_fcn_calls").as<unsigned>();
 
-    auto stag_limit =   parameters("maxstag_at_int").str() == "auto" ?
-                        getStagLimit(data.size(),total_max_obj_fcn_calls) :
-                        parameters("maxstag_at_int").as<unsigned>();
+    auto stag_limit =   parameters.contains("maxstag_at_int") == false ||  parameters("maxstag_at_int").str() == "auto" ?
+                        0 : parameters("maxstag_at_int").as<unsigned>();
 
-    auto stag_stop              = StopCondition<>("Stagnations", *accept_stag_cnt, stag_limit);
     auto obj_calls_stop_at_int   = StopCondition<>("Objective fcn calls",
                                                  *objective_calls_at_exp,
                                                  total_max_obj_fcn_calls );
     intensification_loop_controller.core().addStopCondition(obj_calls_stop_at_int);
-    intensification_loop_controller.core().addStopCondition(stag_stop,LoopController::ON_STOP::RESET);
+    if ( stag_limit ) {
+        auto stag_stop              = StopCondition<>("Stagnations", *accept_stag_cnt, stag_limit);
+        intensification_loop_controller.core().addStopCondition(stag_stop,LoopController::ON_STOP::RESET);
+    }
     //-----------------------------------------------------------------
     //     Stop EXPLORATIONS
     //     1 - By Total number of objective fcn calls
@@ -228,7 +233,7 @@ void tsp_test(int argc, char* argv[])
     cout << fixed << setprecision(2) << totalTimer.getValue() << "\t";
     cout << fixed << setprecision(4) << timeStats << "\t";
     cout << fixed << setprecision(0) << expStats << "\t";
-    cout << fixed << setprecision(4) << impStats << "\t\n";
+    cout << fixed << setprecision(4) << impStats << "\n";
 
     return;
 }
