@@ -23,7 +23,8 @@ SOURCES += \
     apps/std/tsp_test.cpp \
     cops/bmkfcns.cpp \
     apps/std/bmf.cpp \
-    apps/std/bmf_test.cpp
+    apps/std/bmf_test.cpp \
+    apps/std/mkp_test.cpp
 
 HEADERS += \
     apps/delta/tsp_min_d.h \
