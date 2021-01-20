@@ -64,6 +64,9 @@ public:
         __Track(name),_source(source){
         subject.addObserver(*this);
     }
+    MultiTrack(std::string name,const AValue<T>& source):
+        __Track(name),_source(source){
+    }
     virtual ~MultiTrack() = default;
 
     virtual void record(){

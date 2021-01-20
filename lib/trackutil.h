@@ -224,7 +224,7 @@ struct TrackPrinter{
 
     struct __track{
         virtual ~__track() = default;
-        virtual void print(std::ostream& os, unsigned pos) = 0;
+        virtual void print(std::ostream& os, unsigned pos, std::string sep) = 0;
         virtual std::string getName() const = 0;
         virtual unsigned getSize() const = 0;
     };
@@ -233,8 +233,8 @@ struct TrackPrinter{
 
         track(std::string name, std::vector<T> t):_name(name),_track(t){}
 
-        virtual void print(std::ostream& os, unsigned pos){
-            os << _track.at(pos) << "\t";
+        virtual void print(std::ostream& os, unsigned pos, std::string sep = "\t"){
+            os << sep << _track.at(pos);
         }
 
         virtual std::string getName() const {
@@ -251,6 +251,30 @@ struct TrackPrinter{
 
     };
 
+    template<typename T> struct trackManip{
+
+        enum class MANIP{ MIN, MAX, AVG };
+        trackManip( const MultiTrack<T>& t, MANIP manip ):_manip(manip),_name(t.getName()){
+            switch(manip){
+                case MANIP::MIN: _track = getMinTrack(t);break;
+                case MANIP::MAX: _track = getMaxTrack(t);break;
+                case MANIP::AVG: _track = getAverageTrack(t);break;
+            default: throw std::runtime_error("trackManip: unexpected manip type");
+            }
+        }
+        std::string getManip() const{
+            switch(_manip){
+                case MANIP::MIN: return " min ";
+                case MANIP::MAX: return " max ";
+                case MANIP::AVG: return " avg ";
+            default: throw std::runtime_error("trackManip: unexpected manip type");
+            }
+        }
+        std::vector<T> _track;
+        MANIP _manip;
+        std::string _name;
+    };
+
     template<class T>
     TrackPrinter& add(const Track<T>& t){
         _tracks.push_back( std::make_shared<track<T>>( t.getName(), t.getTrack() ) );
@@ -264,6 +288,7 @@ struct TrackPrinter{
            _tracks.push_back( std::make_shared<track<T>>( t.getName() + " - avg",   getAverageTrack(t) ) );
            return *this;
     }
+
     template<class T>
     TrackPrinter& add(const track<T>& t){
         _tracks.push_back( std::make_shared<track<T>>(t) );
@@ -274,27 +299,39 @@ struct TrackPrinter{
     TrackPrinter& operator<<(const Track<T>& t){
         return add(t);
     }
+
     template<class T>
     TrackPrinter& operator<<(const MultiTrack<T>& t){
         return add(t);
     }
+
     template<class T>
     TrackPrinter& operator<<(const track<T>& t){
         return add(t);
     }
 
+    template<class T>
+    TrackPrinter& operator<<(const trackManip<T>& tm){
+        _tracks.push_back( std::make_shared<track<T>>( tm._name + " - " + tm.getManip(),   tm._track ) );
+        return *this;
+    }
+
     void print(std::ostream& os) const {
-        os << std::fixed << std::setprecision(3);
         unsigned maxSz = std::numeric_limits<unsigned>::min();
+        std::string sep = "";
         for(auto t : _tracks){
             if ( t->getSize() > maxSz) maxSz = t->getSize();
-            os << t->getName() << "\t";
+            os << sep << t->getName();
+            sep = "\t";
         }
         os << "\n";
+
         for(unsigned i = 0; i < maxSz; i++){
+           sep = "";
            for(auto t : _tracks){
                if ( i < t->getSize() )
-                   t->print(os,i);
+                   t->print(os,i,sep);
+               sep = "\t";
            }
            os << "\n";
         }

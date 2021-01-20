@@ -10,7 +10,7 @@ class Neighbor : public NonCopyable, public LabeledObject
 {
 public:
 
-    Neighbor(const char * const& name):
+    Neighbor(const std::string& name):
         LabeledObject(name){}
     virtual ~Neighbor() = default;
     virtual std::vector<solution_t> operator()(const solution_t & ) = 0;

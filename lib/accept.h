@@ -18,6 +18,7 @@ public:
     unsigned index() const{
         if (_accepted) return _index;
         throw std::runtime_error("AcceptResult: no results.");
+        //return _index;
     }
     operator unsigned() const { return index(); }
 

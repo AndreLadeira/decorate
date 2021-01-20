@@ -195,6 +195,50 @@ private:
 template< typename solution_t,
           typename cost_t,
           typename Compare<cost_t>::compare_fcn_t c>
+class UpdateBestMTRecorder :
+        public Updater<solution_t,cost_t, c>,
+        public Recorder,
+        public OnionLayer<Updater<solution_t,cost_t,c>>,
+        public AResettable
+{
+public:
+    using OnionLayerBase = OnionLayer<Updater<solution_t,cost_t,c>>;
+    using Updater = Updater<solution_t,cost_t, c>;
+
+    UpdateBestMTRecorder(typename OnionLayerBase::core_ptr_t next, unsigned regularity = 1):
+        Updater("Update MT Recorder"),Recorder(regularity),OnionLayerBase(next),_best_cost( solution_t() ),
+        _best_cost_tr("best cost", _best_cost)  {
+        this->addTrack ( _best_cost_tr );
+    }
+
+    virtual bool operator()(solution_t& bestSoFar,
+                        cost_t& bsfCost,
+                        const solution_t& candidate,
+                        const cost_t candidateCost )
+    {
+        auto result = (*this->_next)(bestSoFar,bsfCost,candidate, candidateCost);
+        _best_cost.setValue(bestSoFar);
+        this->record();
+        return result;
+    }
+
+    const MultiTrack<solution_t>& getLocalTrack(){
+        return this->_best_cost_tr;
+    }
+
+    void reset(){
+        _best_cost_tr.update();
+    }
+
+private:
+
+    Value<solution_t> _best_cost;
+    MultiTrack<solution_t> _best_cost_tr;
+};
+
+template< typename solution_t,
+          typename cost_t,
+          typename Compare<cost_t>::compare_fcn_t c>
 class UpdateImprovementMeter :
         public Updater<solution_t,cost_t, c>,
         public ResettableValue<double>,
@@ -218,8 +262,8 @@ public:
         }
 
         auto result = (*this->_next)(bestSoFar,bsfCost,candidate, candidateCost);
-        const auto abs_startcost = std::abs( static_cast<long>(startcost) );
-        if (result) this->setValue( static_cast<double>( std::abs( static_cast<long>(startcost - candidateCost) ) ) / abs_startcost );
+        const auto abs_startcost = std::abs( static_cast<int>(startcost) );
+        if (result) this->setValue( static_cast<double>( std::abs( static_cast<int>(startcost - candidateCost) ) ) / abs_startcost );
         return result;
     }
 
@@ -282,6 +326,10 @@ using UpdateLocalRecorder =
 UpdateLocalRecorder<solution_t,cost_t,Compare<cost_t>::greater>;
 
 template< typename solution_t,typename cost_t = unsigned>
+using UpdateBestMTRecorder =
+UpdateBestMTRecorder<solution_t,cost_t,Compare<cost_t>::greater>;
+
+template< typename solution_t,typename cost_t = unsigned>
 using UpdateResetObject =
 UpdateResetObject<solution_t,cost_t,Compare<cost_t>::greater>;
 
@@ -304,6 +352,10 @@ UpdateRecorder<solution_t,cost_t,Compare<cost_t>::less>;
 template< typename solution_t,typename cost_t = unsigned>
 using UpdateLocalRecorder =
 UpdateLocalRecorder<solution_t,cost_t,Compare<cost_t>::less>;
+
+template< typename solution_t,typename cost_t = unsigned>
+using UpdateBestMTRecorder =
+UpdateBestMTRecorder<solution_t,cost_t,Compare<cost_t>::less>;
 
 template< typename solution_t,typename cost_t = unsigned>
 using UpdateResetObject =
